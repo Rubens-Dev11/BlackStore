@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Query, Patch } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  Patch,
+  DefaultValuePipe,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -24,12 +36,14 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Liste des commandes' })
   @ApiResponse({ status: 401, description: 'Non autorisé' })
   async findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('status') status?: string,
-    @Query('dateFrom') dateFrom?: Date,
-    @Query('dateTo') dateTo?: Date,
+    @Query('dateFrom') dateFromStr?: string,
+    @Query('dateTo') dateToStr?: string,
   ) {
+    const dateFrom = parseOptionalDate(dateFromStr, 'dateFrom');
+    const dateTo = parseOptionalDate(dateToStr, 'dateTo');
     return this.ordersService.findAll({ page, limit, status, dateFrom, dateTo });
   }
 
@@ -67,4 +81,15 @@ export class OrdersController {
   async resendDownload(@Param('id') id: string) {
     return this.ordersService.resendDownload(id);
   }
+}
+
+function parseOptionalDate(value: string | undefined, field: string): Date | undefined {
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Paramètre "${field}" invalide : date attendue (ex. 2026-01-01)`);
+  }
+  return date;
 }

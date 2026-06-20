@@ -81,7 +81,9 @@ export class OrdersService {
     dateFrom?: Date;
     dateTo?: Date;
   }) {
-    const { page = 1, limit = 20, status, dateFrom, dateTo } = query;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const { status, dateFrom, dateTo } = query;
 
     const where: Prisma.OrderWhereInput = {};
     if (status) where.status = status as OrderStatus;
