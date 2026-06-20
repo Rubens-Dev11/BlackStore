@@ -185,6 +185,7 @@ export class ProductsService {
         maxDownloads: updateProductDto.downloadLimit,
         downloadExpiryHours: updateProductDto.downloadExpiryHours,
         isFeatured: updateProductDto.isFeatured,
+        isActive: updateProductDto.isActive,
       },
     });
   }

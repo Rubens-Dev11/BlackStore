@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Prisma, Order, OrderItem, Product } from '@prisma/client';
 import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
@@ -36,29 +43,66 @@ export class PaymentsService {
 
     const paymentReference = `BSP-${Date.now()}-${uuidv4().substring(0, 8)}`;
 
-    const response = await axios.post(
-      `${this.configService.get('CINETPAY_API_URL')}/payment`,
-      {
-        apikey: this.configService.get('CINETPAY_API_KEY'),
-        site_id: this.configService.get('CINETPAY_SITE_ID'),
-        transaction_id: paymentReference,
-        amount: order.totalAmount,
-        currency: this.configService.get('CINETPAY_CURRENCY'),
-        description: `Commande BlackStore ${order.orderNumber}`,
-        notify_url: this.configService.get('CINETPAY_NOTIFY_URL'),
-        return_url: this.configService.get('CINETPAY_RETURN_URL'),
-        customer_name: order.buyerName,
-        customer_email: order.buyerEmail,
-        customer_phone_number: order.buyerPhone || '',
-        customer_address: 'Cameroun',
-        customer_city: 'Douala',
-        customer_country: 'CM',
-        customer_state: 'CM',
-        customer_zip_code: '00000',
-        channels: 'ALL',
-        lang: 'fr',
-      },
-    );
+    let response;
+    try {
+      response = await axios.post(
+        `${this.configService.get('CINETPAY_API_URL')}/payment`,
+        {
+          apikey: this.configService.get('CINETPAY_API_KEY'),
+          site_id: this.configService.get('CINETPAY_SITE_ID'),
+          transaction_id: paymentReference,
+          amount: order.totalAmount,
+          currency: this.configService.get('CINETPAY_CURRENCY'),
+          description: `Commande BlackStore ${order.orderNumber}`,
+          notify_url: this.configService.get('CINETPAY_NOTIFY_URL'),
+          return_url: this.configService.get('CINETPAY_RETURN_URL'),
+          customer_name: order.buyerName,
+          customer_email: order.buyerEmail,
+          customer_phone_number: order.buyerPhone || '',
+          customer_address: 'Cameroun',
+          customer_city: 'Douala',
+          customer_country: 'CM',
+          customer_state: 'CM',
+          customer_zip_code: '00000',
+          channels: 'ALL',
+          lang: 'fr',
+        },
+      );
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const cinetPayData = error.response?.data;
+
+        this.logger.error(
+          `Erreur CinetPay lors de l'initiation du paiement (commande ${orderId}, ref ${paymentReference})`,
+          {
+            status,
+            data: cinetPayData,
+            message: error.message,
+            code: error.code,
+          },
+        );
+
+        if (status && status >= 400 && status < 500) {
+          const reason =
+            (typeof cinetPayData === 'object' &&
+              cinetPayData !== null &&
+              (cinetPayData.description || cinetPayData.message || cinetPayData.error)) ||
+            'Requête refusée par le service de paiement';
+          throw new BadRequestException(
+            `Échec de l'initiation du paiement CinetPay: ${reason}`,
+          );
+        }
+
+        throw new ServiceUnavailableException('Service de paiement temporairement indisponible');
+      }
+
+      this.logger.error(
+        `Erreur inattendue lors de l'initiation du paiement (commande ${orderId})`,
+        error,
+      );
+      throw new ServiceUnavailableException('Service de paiement temporairement indisponible');
+    }
 
     await this.prisma.order.update({
       where: { id: orderId },
