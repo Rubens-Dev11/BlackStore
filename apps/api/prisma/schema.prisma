@@ -1,0 +1,203 @@
+// apps/api/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// CATÉGORIE
+// ─────────────────────────────────────────────
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @db.VarChar(100)
+  slug        String    @unique @db.VarChar(100)
+  description String?   @db.Text
+  iconUrl     String?   @db.VarChar(500) @map("icon_url")
+  isActive    Boolean   @default(true)   @map("is_active")
+  sortOrder   Int       @default(0)      @map("sort_order")
+  products    Product[]
+  createdAt   DateTime  @default(now())  @map("created_at")
+  updatedAt   DateTime  @updatedAt       @map("updated_at")
+
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────────
+// PRODUIT
+// ─────────────────────────────────────────────
+enum Platform {
+  android
+  desktop
+  multiplatform
+}
+
+model Product {
+  id                  String      @id @default(uuid())
+  name                String      @db.VarChar(255)
+  slug                String      @unique @db.VarChar(255)
+  shortDescription    String?     @db.Text          @map("short_description")
+  description         String?     @db.Text
+  coverImageUrl       String?     @db.VarChar(500)  @map("cover_image_url")
+  screenshots         String[]
+  demoVideoUrl        String?     @db.VarChar(500)  @map("demo_video_url")
+  installGuide        String?     @db.Text          @map("install_guide")
+  installVideoUrl     String?     @db.VarChar(500)  @map("install_video_url")
+  price               Int                           // Prix en FCFA (XAF)
+  originalPrice       Int?                          @map("original_price")
+  categoryId          String?                       @map("category_id")
+  category            Category?   @relation(fields: [categoryId], references: [id])
+  tags                String[]
+  version             String?     @db.VarChar(20)
+  fileSizeMb          Decimal?    @db.Decimal(10, 2) @map("file_size_mb")
+  platform            Platform    @default(android)
+  minRequirements     Json?                         @map("min_requirements")
+  changelog           Json?
+  filePath            String?     @db.VarChar(500)  @map("file_path")
+  fileHash            String?     @db.VarChar(64)   @map("file_hash")
+  maxDownloads        Int         @default(3)        @map("max_downloads")
+  downloadExpiryHours Int         @default(72)       @map("download_expiry_hours")
+  downloadCount       Int         @default(0)        @map("download_count")
+  viewCount           Int         @default(0)        @map("view_count")
+  ratingAvg           Decimal     @default(0) @db.Decimal(3, 2) @map("rating_avg")
+  ratingCount         Int         @default(0)        @map("rating_count")
+  isActive            Boolean     @default(false)    @map("is_active")
+  isFeatured          Boolean     @default(false)    @map("is_featured")
+  seoTitle            String?     @db.VarChar(70)   @map("seo_title")
+  seoDescription      String?     @db.VarChar(160)  @map("seo_description")
+  orderItems          OrderItem[]
+  reviews             Review[]
+  pageViews           PageView[]
+  createdAt           DateTime    @default(now())    @map("created_at")
+  updatedAt           DateTime    @updatedAt         @map("updated_at")
+
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────
+// COMMANDE
+// ─────────────────────────────────────────────
+enum OrderStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum PaymentMethod {
+  orange_money
+  mtn_mobile_money
+  card
+}
+
+model Order {
+  id               String         @id @default(uuid())
+  orderNumber      String         @unique                @map("order_number")
+  buyerName        String         @db.VarChar(100)       @map("buyer_name")
+  buyerEmail       String         @db.VarChar(150)       @map("buyer_email")
+  buyerPhone       String?        @db.VarChar(20)        @map("buyer_phone")
+  totalAmount      Int                                   @map("total_amount")
+  currency         String         @default("XAF") @db.VarChar(3)
+  status           OrderStatus    @default(pending)
+  paymentMethod    PaymentMethod?                        @map("payment_method")
+  paymentReference String?        @db.VarChar(255)       @map("payment_reference")
+  utmSource        String?        @db.VarChar(100)       @map("utm_source")
+  utmMedium        String?        @db.VarChar(100)       @map("utm_medium")
+  utmCampaign      String?        @db.VarChar(100)       @map("utm_campaign")
+  utmContent       String?        @db.VarChar(100)       @map("utm_content")
+  referrerUrl      String?        @db.Text               @map("referrer_url")
+  items            OrderItem[]
+  createdAt        DateTime       @default(now())        @map("created_at")
+  paidAt           DateTime?                             @map("paid_at")
+  updatedAt        DateTime       @updatedAt             @map("updated_at")
+
+  @@map("orders")
+}
+
+// ─────────────────────────────────────────────
+// ITEM DE COMMANDE
+// ─────────────────────────────────────────────
+model OrderItem {
+  id              String          @id @default(uuid())
+  orderId         String                               @map("order_id")
+  order           Order           @relation(fields: [orderId], references: [id])
+  productId       String                               @map("product_id")
+  product         Product         @relation(fields: [productId], references: [id])
+  priceAtPurchase Int                                  @map("price_at_purchase")
+  downloadTokens  DownloadToken[]
+  createdAt       DateTime        @default(now())      @map("created_at")
+
+  @@map("order_items")
+}
+
+// ─────────────────────────────────────────────
+// TOKEN DE TÉLÉCHARGEMENT SÉCURISÉ
+// ─────────────────────────────────────────────
+model DownloadToken {
+  id            String    @id @default(uuid())
+  orderItemId   String                         @map("order_item_id")
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id])
+  token         String    @unique @default(uuid())
+  downloadCount Int       @default(0)          @map("download_count")
+  maxDownloads  Int       @default(3)          @map("max_downloads")
+  expiresAt     DateTime                       @map("expires_at")
+  isActive      Boolean   @default(true)       @map("is_active")
+  createdAt     DateTime  @default(now())      @map("created_at")
+  updatedAt     DateTime  @updatedAt           @map("updated_at")
+
+  @@map("download_tokens")
+}
+
+// ─────────────────────────────────────────────
+// AVIS CLIENT
+// ─────────────────────────────────────────────
+model Review {
+  id         String   @id @default(uuid())
+  productId  String                        @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id])
+  buyerEmail String   @db.VarChar(150)     @map("buyer_email")
+  rating     Int      // 1 à 5
+  comment    String?  @db.Text
+  isApproved Boolean  @default(false)      @map("is_approved")
+  createdAt  DateTime @default(now())      @map("created_at")
+  updatedAt  DateTime @updatedAt           @map("updated_at")
+
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────
+// ADMINISTRATEUR
+// ─────────────────────────────────────────────
+model Admin {
+  id           String    @id @default(uuid())
+  email        String    @unique @db.VarChar(150)
+  passwordHash String    @db.VarChar(255)          @map("password_hash")
+  lastLogin    DateTime?                            @map("last_login")
+  isActive     Boolean   @default(true)             @map("is_active")
+  createdAt    DateTime  @default(now())            @map("created_at")
+  updatedAt    DateTime  @updatedAt                 @map("updated_at")
+
+  @@map("admins")
+}
+
+// ─────────────────────────────────────────────
+// VUE DE PAGE (ANALYTICS)
+// ─────────────────────────────────────────────
+model PageView {
+  id        String   @id @default(uuid())
+  productId String?                       @map("product_id")
+  product   Product? @relation(fields: [productId], references: [id])
+  sessionId String?  @db.VarChar(100)     @map("session_id")
+  utmSource String?  @db.VarChar(100)     @map("utm_source")
+  utmMedium String?  @db.VarChar(100)     @map("utm_medium")
+  ipHash    String?  @db.VarChar(64)      @map("ip_hash")
+  userAgent String?  @db.Text             @map("user_agent")
+  createdAt DateTime @default(now())      @map("created_at")
+
+  @@map("page_views")
+}

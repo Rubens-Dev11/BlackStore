@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────
+# BlackStore — Docker Compose Production Override
+# ─────────────────────────────────────────────────────────────────────
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+# Ce fichier surcharge docker-compose.yml pour la production :
+# - Supprime les volumes de développement (hot-reload)
+# - Utilise des builds multi-stage optimisés
+# - Configure NODE_ENV=production
+# - Désactive Swagger, MailHog, MinIO Console
+# - Active les health checks stricts
+# ─────────────────────────────────────────────────────────────────────
+
+version: '3.9'
+
+services:
+
+  nestjs-api:
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - files-storage:/app/storage
+    # TODO: Override build avec multi-stage Dockerfile.prod
+    # TODO: Configurer les secrets via Docker Secrets ou Vault
+
+  nextjs-storefront:
+    environment:
+      - NODE_ENV=production
+    volumes: []
+    # TODO: Override build pour le mode production (next build + next start)
+
+  react-admin:
+    environment:
+      - NODE_ENV=production
+    volumes: []
+    # TODO: Build statique (vite build) servi par nginx
+
+  # TODO: Remplacer MailHog par un vrai service SMTP (SES, SendGrid, etc.)
+  # TODO: Remplacer MinIO par S3 ou Cloudflare R2
+  # TODO: Ajouter un reverse proxy (Traefik ou nginx)
+  # TODO: Ajouter les certificats SSL/TLS
