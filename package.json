@@ -1,0 +1,27 @@
+{
+  "name": "blackstore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BlackStore — Plateforme de Vente de Produits Numériques",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:storefront": "npm run dev --workspace=apps/storefront",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:storefront": "npm run build --workspace=apps/storefront",
+    "build:admin": "npm run build --workspace=apps/admin",
+    "prisma:generate": "npx prisma generate --schema=apps/api/prisma/schema.prisma",
+    "prisma:migrate": "npx prisma migrate dev --schema=apps/api/prisma/schema.prisma",
+    "prisma:seed": "npx prisma db seed --schema=apps/api/prisma/schema.prisma",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v && docker compose up --build"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

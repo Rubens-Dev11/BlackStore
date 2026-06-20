@@ -1,0 +1,150 @@
+networks:
+  blackstore-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  files-storage:
+
+services:
+
+  # ── API NESTJS ──────────────────────────────────────────────────────
+  nestjs-api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: blackstore-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+      - files-storage:/app/storage
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - blackstore-network
+    restart: unless-stopped
+
+  # ── STOREFRONT NEXT.JS ──────────────────────────────────────────────
+  nextjs-storefront:
+    build:
+      context: ./apps/storefront
+      dockerfile: Dockerfile
+    container_name: blackstore-storefront
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/storefront:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    env_file:
+      - .env
+    depends_on:
+      - nestjs-api
+    networks:
+      - blackstore-network
+    restart: unless-stopped
+
+  # ── ADMIN DASHBOARD REACT/VITE ──────────────────────────────────────
+  react-admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: blackstore-admin
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./apps/admin:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - .env
+    depends_on:
+      - nestjs-api
+    networks:
+      - blackstore-network
+    restart: unless-stopped
+
+  # ── POSTGRESQL 16 ────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: blackstore-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blackstore}
+      POSTGRES_USER: ${POSTGRES_USER:-blackstore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blackstore_dev_password}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blackstore} -d ${POSTGRES_DB:-blackstore}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - blackstore-network
+    restart: unless-stopped
+
+  # ── REDIS 7 ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: blackstore-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blackstore-network
+    restart: unless-stopped
+
+  # ── MINIO (S3-compatible) ─────────────────────────────────────────────
+  minio:
+    image: minio/minio
+    container_name: blackstore-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-blackstore_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-blackstore_minio_secret}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - blackstore-network
+    restart: unless-stopped
+
+  # ── MAILHOG (SMTP fictif) ─────────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog
+    container_name: blackstore-mailhog
+    ports:
+      - "1026:1025"
+      - "8027:8025"
+    networks:
+      - blackstore-network
+    restart: unless-stopped
