@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@blackstore/shared": "*",
     "@tanstack/react-query": "^5.17.19",
     "@tiptap/react": "^2.1.14",
     "@tiptap/starter-kit": "^2.1.14",
