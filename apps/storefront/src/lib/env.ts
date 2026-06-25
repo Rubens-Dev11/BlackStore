@@ -10,6 +10,16 @@ export function getApiUrl(): string {
   return DEFAULT_API_URL;
 }
 
+export function getServerApiUrl(): string {
+  const value = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+
+  if (value) {
+    return value.replace(/\/$/, '');
+  }
+
+  return DEFAULT_API_URL;
+}
+
 export function getSiteUrl(): string {
   const value = process.env.NEXT_PUBLIC_SITE_URL;
   return (value ?? 'http://localhost:3001').replace(/\/$/, '');

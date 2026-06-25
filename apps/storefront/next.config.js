@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@blackstore/shared'],
+  transpilePackages: ['@/lib/format'],
 };
 
 module.exports = nextConfig;

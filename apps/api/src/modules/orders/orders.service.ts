@@ -188,4 +188,40 @@ export class OrdersService {
     this.logger.log(`Liens de téléchargement renvoyés pour la commande : ${order.id}`);
     return { success: true };
   }
+
+  async findByNumberPublic(orderNumber: string, email: string) {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        orderNumber,
+        buyerEmail: email.toLowerCase().trim(),
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: { id: true, name: true, slug: true, coverImageUrl: true },
+            },
+            downloadTokens: {
+              where: { isActive: true },
+              select: {
+                token: true,
+                downloadCount: true,
+                maxDownloads: true,
+                expiresAt: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(
+        'Commande introuvable. Vérifiez le numéro et l\'adresse email.',
+      );
+    }
+
+    return order;
+  }
 }

@@ -18,13 +18,10 @@ async function bootstrap(): Promise<void> {
 
   // 2. CORS configuration
   app.enableCors({
-    origin: [
-      configService.get<string>('NEXT_PUBLIC_SITE_URL', 'http://localhost:3001'),
-      configService.get<string>('VITE_API_URL', 'http://localhost:3002'),
-      'http://localhost:3001',
-      'http://localhost:3002',
-    ],
+    origin: ['http://localhost:3001', 'http://localhost:3002'],
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // 3. Global validation pipe

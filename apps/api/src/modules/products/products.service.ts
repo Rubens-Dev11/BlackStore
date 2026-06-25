@@ -54,6 +54,20 @@ export class ProductsService {
     };
   }
 
+  async findAllAdmin() {
+    const data = await this.prisma.product.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      data,
+      total: data.length,
+      page: 1,
+      limit: data.length,
+      totalPages: 1,
+    };
+  }
+
   async findFeatured() {
     return await this.prisma.product.findMany({
       where: { isFeatured: true, isActive: true },

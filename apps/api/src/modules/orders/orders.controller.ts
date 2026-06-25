@@ -10,6 +10,8 @@ import {
   Patch,
   DefaultValuePipe,
   ParseIntPipe,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -45,6 +47,22 @@ export class OrdersController {
     const dateFrom = parseOptionalDate(dateFromStr, 'dateFrom');
     const dateTo = parseOptionalDate(dateToStr, 'dateTo');
     return this.ordersService.findAll({ page, limit, status, dateFrom, dateTo });
+  }
+
+  @Get('by-number/:orderNumber')
+  @ApiOperation({ summary: 'Récupérer une commande par numéro (public)' })
+  @ApiResponse({ status: 200, description: 'Détails de la commande' })
+  @ApiResponse({ status: 400, description: 'Paramètre email manquant' })
+  @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  @HttpCode(HttpStatus.OK)
+  async findByNumber(
+    @Param('orderNumber') orderNumber: string,
+    @Query('email') email: string,
+  ) {
+    if (!email?.trim()) {
+      throw new BadRequestException('Le paramètre "email" est requis');
+    }
+    return this.ordersService.findByNumberPublic(orderNumber, email);
   }
 
   @Get(':id')
@@ -93,3 +111,4 @@ function parseOptionalDate(value: string | undefined, field: string): Date | und
   }
   return date;
 }
+

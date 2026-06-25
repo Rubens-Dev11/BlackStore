@@ -35,3 +35,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Couleurs spécifiques pour le layout */
+body {
+  background-color: rgb(9 9 11); /* zinc-950 */
+  color: rgb(244 244 245); /* zinc-100 */
+}
