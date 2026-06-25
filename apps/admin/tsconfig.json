@@ -21,7 +21,7 @@
     
     "paths": {
       "@/*": ["./src/*"],
-      "@blackstore/shared": ["../../packages/shared/src/index.ts"]
+      "@/lib/format": ["../../packages/shared/src/index.ts"]
     }
   },
   "include": ["src"],

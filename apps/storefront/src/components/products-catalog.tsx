@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { formatFcfa, isApiError, type ProductsListResponse } from '@blackstore/shared';
+import { formatFcfa, isApiError, type ProductsListResponse } from '@/lib/format';
 import { api } from '@/lib/api';
 
 export function ProductsCatalog() {

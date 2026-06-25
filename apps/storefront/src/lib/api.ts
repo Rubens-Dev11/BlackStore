@@ -1,4 +1,4 @@
-import { createApiClient } from '@blackstore/shared';
+import { createApiClient } from '@/lib/format';
 import { getApiUrl } from './env';
 
 export const api = createApiClient({

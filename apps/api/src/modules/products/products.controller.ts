@@ -34,6 +34,27 @@ export class ProductsController {
     return this.productsService.search(q);
   }
 
+  @Get('by-id/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Détails d\'un produit par ID (admin)' })
+  @ApiResponse({ status: 200, description: 'Détails du produit' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  @ApiResponse({ status: 404, description: 'Produit introuvable' })
+  async findById(@Param('id') id: string) {
+    return this.productsService.findById(id);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Liste complète des produits (admin)' })
+  @ApiResponse({ status: 200, description: 'Tous les produits y compris inactifs' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async findAllAdmin() {
+    return this.productsService.findAllAdmin();
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Détails d\'un produit' })
   @ApiResponse({ status: 200, description: 'Détails du produit' })

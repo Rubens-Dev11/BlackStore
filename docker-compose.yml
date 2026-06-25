@@ -46,11 +46,16 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./apps/storefront:/app
+      - ./apps/storefront/src:/app/src
+      - ./apps/storefront/public:/app/public
+      - ./apps/storefront/tailwind.config.ts:/app/tailwind.config.ts
+      - ./apps/storefront/postcss.config.js:/app/postcss.config.js
       - /app/node_modules
       - /app/.next
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - API_URL=http://nestjs-api:3000
       - PORT=3001
     env_file:
       - .env
@@ -69,10 +74,11 @@ services:
     ports:
       - "3002:3002"
     volumes:
-      - ./apps/admin:/app
+      - ./apps/admin/src:/app/src
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000
     env_file:
       - .env
     depends_on:
@@ -148,3 +154,4 @@ services:
     networks:
       - blackstore-network
     restart: unless-stopped
+
