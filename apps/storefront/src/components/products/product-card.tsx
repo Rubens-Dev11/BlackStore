@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, Download } from 'lucide-react';
+import { Star, Download, ShoppingCart, Zap, CheckCircle2 } from 'lucide-react';
 import { formatFcfa } from '@/lib/format';
+import { useCartStore } from '@/stores/use-cart-store';
+import { useState } from 'react';
 import type { ProductSummary } from '@/lib/api/products';
 
 const PLATFORM_LABEL: Record<ProductSummary['platform'], string> = {
@@ -18,6 +20,32 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const hasDiscount =
     product.originalPrice !== null && product.originalPrice > product.price;
+  const addItem = useCartStore((s) => s.addItem);
+  const [addedToCart, setAddedToCart] = useState(false);
+
+  const handleAddToCart = () => {
+    addItem({
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      coverImageUrl: product.coverImageUrl,
+    });
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+  };
+
+  const handleBuyNow = () => {
+    addItem({
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      coverImageUrl: product.coverImageUrl,
+    });
+    // Le Link vers la page produit gérera la navigation
+    // L'utilisateur verra le feedback "Ajouté !" puis pourra acheter depuis la page produit
+  };
 
   return (
     <Link
@@ -83,6 +111,37 @@ export function ProductCard({ product }: ProductCardProps) {
               {formatFcfa(product.originalPrice!)}
             </span>
           )}
+        </div>
+
+        {/* Boutons CTA */}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <button
+            onClick={handleBuyNow}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2 font-semibold text-sm text-white transition-colors hover:bg-orange-600"
+          >
+            <Zap className="h-3 w-3" />
+            Acheter maintenant
+          </button>
+          <button
+            onClick={handleAddToCart}
+            className={`w-full flex items-center justify-center gap-2 rounded-lg border px-4 py-2 font-semibold text-sm transition-all ${
+              addedToCart
+                ? 'border-green-500 bg-green-900/30 text-green-400'
+                : 'border-zinc-600 text-zinc-300 hover:border-orange-500 hover:text-white'
+            }`}
+          >
+            {addedToCart ? (
+              <>
+                <CheckCircle2 className="h-3 w-3" />
+                Ajouté !
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-3 w-3" />
+                Ajouter au panier
+              </>
+            )}
+          </button>
         </div>
       </div>
     </Link>

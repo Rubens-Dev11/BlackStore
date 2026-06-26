@@ -60,6 +60,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Détails du produit' })
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
   async findBySlug(@Param('slug') slug: string) {
+    console.log('Controller findBySlug called with slug:', slug);
     return this.productsService.findBySlug(slug);
   }
 
