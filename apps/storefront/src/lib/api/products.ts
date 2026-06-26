@@ -1,4 +1,14 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+import { getApiUrl, getServerApiUrl } from '@/lib/env';
+
+const getBaseUrl = () => {
+  // eslint-disable-next-line no-restricted-globals
+  if (typeof window !== 'undefined') {
+    // client-side
+    return getApiUrl();
+  }
+  // server-side
+  return getServerApiUrl();
+};
 
 export interface ProductSummary {
   id: string;
@@ -25,7 +35,7 @@ export interface ProductDetail extends ProductSummary {
   tags: string[];
   version: string | null;
   fileSizeMb: number | null;
-  minRequirements: string | null;
+  minRequirements: any; // Prisma Json type
   viewCount: number;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -37,7 +47,7 @@ export async function fetchProducts(params?: {
 }): Promise<{ data: ProductSummary[]; total: number; page: number; limit: number }> {
   // L'API n'accepte AUCUN query param sur GET /products (400 sinon)
   // Le filtrage se fait côté client après récupération de tous les produits
-  const res = await fetch(`${API}/products`, { cache: 'no-store' });
+  const res = await fetch(`${getBaseUrl()}/products`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur chargement produits');
 
   const result: { data: ProductSummary[]; total: number; page: number; limit: number } =
@@ -63,20 +73,20 @@ export async function fetchProducts(params?: {
 }
 
 export async function fetchFeaturedProducts(): Promise<ProductSummary[]> {
-  const res = await fetch(`${API}/products/featured`, { cache: 'no-store' });
+  const res = await fetch(`${getBaseUrl()}/products/featured`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur produits vedettes');
   return res.json();
 }
 
 export async function fetchProductBySlug(slug: string): Promise<ProductDetail> {
-  const res = await fetch(`${API}/products/${slug}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Produit introuvable');
-  return res.json();
-}
+    const res = await fetch(`${getBaseUrl()}/products/${slug}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Produit introuvable');
+    return res.json();
+  }
 
 export async function trackPageView(productId: string): Promise<void> {
   try {
-    await fetch(`${API}/analytics/pageview`, {
+    await fetch(`${getBaseUrl()}/analytics/pageview`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId }),
@@ -85,3 +95,4 @@ export async function trackPageView(productId: string): Promise<void> {
     // silencieux — ne jamais bloquer l'affichage pour un tracking
   }
 }
+

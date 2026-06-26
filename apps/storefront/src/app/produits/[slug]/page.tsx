@@ -7,6 +7,9 @@ interface Props {
   params: { slug: string };
 }
 
+export const dynamicParams = true;
+export const revalidate = 0;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const product = await fetchProductBySlug(params.slug);

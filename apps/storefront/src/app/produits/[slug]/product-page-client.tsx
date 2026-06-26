@@ -256,7 +256,9 @@ export function ProductPageClient({ product }: Props) {
             Configuration requise
           </h2>
           <p className="whitespace-pre-wrap text-sm text-zinc-400">
-            {product.minRequirements}
+            {typeof product.minRequirements === 'object'
+              ? JSON.stringify(product.minRequirements, null, 2)
+              : product.minRequirements}
           </p>
         </section>
       )}
