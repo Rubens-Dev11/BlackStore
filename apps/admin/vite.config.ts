@@ -14,5 +14,11 @@ export default defineConfig({
     port: 3002,
     strictPort: true,
     host: true,
+    // Bind mount Docker sous Windows: inotify ne traverse pas le mount,
+    // le HMR ne se déclenche pas sans polling. Évite un docker restart à chaque modif.
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
   },
 });
