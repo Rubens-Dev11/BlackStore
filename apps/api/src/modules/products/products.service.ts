@@ -15,6 +15,32 @@ export class ProductsService {
     private readonly fileStorageService: FileStorageService,
   ) { }
 
+  // Durée de validité des URLs presigned (7 jours = max autorisé par MinIO/S3).
+  private static readonly PRESIGN_TTL = 7 * 24 * 3600;
+
+  /**
+   * Transforme les objectKeys MinIO d'un produit en URLs presigned joignables
+   * par le navigateur. À défaut de coverImageUrl, utilise le 1er screenshot.
+   */
+  private async withImageUrls<
+    T extends { coverImageUrl?: string | null; screenshots?: string[] | null },
+  >(product: T): Promise<T> {
+    const sign = (key: string | null | undefined) =>
+      key
+        ? this.fileStorageService.getPresignedUrl(key, ProductsService.PRESIGN_TTL)
+        : Promise.resolve(null);
+
+    const coverKey = product.coverImageUrl || product.screenshots?.[0] || null;
+    const [coverImageUrl, screenshots] = await Promise.all([
+      sign(coverKey),
+      product.screenshots
+        ? Promise.all(product.screenshots.map((k) => this.fileStorageService.getPresignedUrl(k, ProductsService.PRESIGN_TTL)))
+        : Promise.resolve(product.screenshots ?? undefined),
+    ]);
+
+    return { ...product, coverImageUrl, ...(product.screenshots ? { screenshots } : {}) };
+  }
+
   async findAll(query: ProductQueryDto) {
     const { page = 1, limit = 12, categoryId, featured } = query;
 
@@ -33,6 +59,7 @@ export class ProductsService {
           slug: true,
           shortDescription: true,
           coverImageUrl: true,
+          screenshots: true,
           price: true,
           originalPrice: true,
           platform: true,
@@ -51,7 +78,7 @@ export class ProductsService {
     ]);
 
     return {
-      data,
+      data: await Promise.all(data.map((p) => this.withImageUrls(p))),
       total,
       page,
       limit,
@@ -65,7 +92,7 @@ export class ProductsService {
     });
 
     return {
-      data,
+      data: await Promise.all(data.map((p) => this.withImageUrls(p))),
       total: data.length,
       page: 1,
       limit: data.length,
@@ -74,7 +101,7 @@ export class ProductsService {
   }
 
   async findFeatured() {
-    return await this.prisma.product.findMany({
+    const data = await this.prisma.product.findMany({
       where: { isFeatured: true, isActive: true },
       take: 8,
       orderBy: { viewCount: 'desc' },
@@ -84,6 +111,7 @@ export class ProductsService {
         slug: true,
         shortDescription: true,
         coverImageUrl: true,
+        screenshots: true,
         price: true,
         originalPrice: true,
         platform: true,
@@ -98,6 +126,8 @@ export class ProductsService {
         },
       },
     });
+
+    return await Promise.all(data.map((p) => this.withImageUrls(p)));
   }
 
   async search(q: string) {
@@ -174,7 +204,7 @@ export class ProductsService {
       data: { viewCount: product.viewCount + 1 },
     });
 
-    return product;
+    return await this.withImageUrls(product);
   }
 
   async findById(id: string) {

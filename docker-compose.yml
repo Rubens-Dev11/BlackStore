@@ -24,6 +24,9 @@ services:
       - files-storage:/app/storage
     environment:
       - NODE_ENV=development
+      # URL MinIO joignable par le navigateur (réécrit l'origine des URLs presigned).
+      # En prod: domaine public du stockage (ex: https://files.blackstore.pymail.cm).
+      - MINIO_PUBLIC_URL=http://localhost:9000
     env_file:
       - .env
     depends_on:
