@@ -51,6 +51,8 @@ services:
       - ./apps/storefront/package.json:/app/package.json
       - ./apps/storefront/tailwind.config.ts:/app/tailwind.config.ts
       - ./apps/storefront/postcss.config.js:/app/postcss.config.js
+      - ./apps/storefront/tsconfig.json:/app/tsconfig.json
+      - ./apps/storefront/next.config.js:/app/next.config.js
       - /app/node_modules
       - /app/.next
     environment:
@@ -58,6 +60,9 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3000
       - API_URL=http://nestjs-api:3000
       - PORT=3001
+      # Bind mount Docker sous Windows: force le polling pour que le HMR Next.js
+      # détecte les changements de fichiers (inotify ne traverse pas le mount).
+      - WATCHPACK_POLLING=true
     env_file:
       - .env
     depends_on:
