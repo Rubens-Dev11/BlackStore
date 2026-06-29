@@ -8,15 +8,39 @@ import { randomUUID } from 'crypto';
 export class FileStorageService implements OnModuleInit {
   private readonly logger = new Logger(FileStorageService.name);
   private readonly minioClient: Minio.Client;
+  // Client dédié à la génération d'URLs presigned : pointé sur l'hôte PUBLIC
+  // (joignable par le navigateur). La signature inclut le Host, donc on doit
+  // signer directement pour l'hôte public — une simple réécriture de chaîne
+  // casserait la signature (SignatureDoesNotMatch). region fixée => presign
+  // purement local, aucun appel réseau vers l'hôte public.
+  private readonly minioPublicClient: Minio.Client;
   private readonly bucketName: string;
 
   constructor(private readonly configService: ConfigService) {
+    const endPoint = this.configService.get<string>('MINIO_ENDPOINT', 'minio');
+    const port = this.configService.get<number>('MINIO_PORT', 9000);
+    const accessKey = this.configService.get<string>('MINIO_ACCESS_KEY', 'minioadmin');
+    const secretKey = this.configService.get<string>('MINIO_SECRET_KEY', 'minioadmin');
+
     this.minioClient = new Minio.Client({
-      endPoint: this.configService.get<string>('MINIO_ENDPOINT', 'minio'),
-      port: this.configService.get<number>('MINIO_PORT', 9000),
+      endPoint,
+      port,
       useSSL: false,
-      accessKey: this.configService.get<string>('MINIO_ACCESS_KEY', 'minioadmin'),
-      secretKey: this.configService.get<string>('MINIO_SECRET_KEY', 'minioadmin'),
+      accessKey,
+      secretKey,
+    });
+
+    const publicUrl = new URL(
+      this.configService.get<string>('MINIO_PUBLIC_URL', `http://localhost:${port}`),
+    );
+    const useSSL = publicUrl.protocol === 'https:';
+    this.minioPublicClient = new Minio.Client({
+      endPoint: publicUrl.hostname,
+      port: publicUrl.port ? Number(publicUrl.port) : useSSL ? 443 : 80,
+      useSSL,
+      accessKey,
+      secretKey,
+      region: 'us-east-1',
     });
 
     this.bucketName = this.configService.get<string>('MINIO_BUCKET', 'blackstore-files');
@@ -82,7 +106,8 @@ export class FileStorageService implements OnModuleInit {
   }
 
   async getPresignedUrl(objectKey: string, expiresInSeconds: number): Promise<string> {
-    return await this.minioClient.presignedGetObject(
+    // Signé directement pour l'hôte public => URL valide et joignable par le navigateur.
+    return await this.minioPublicClient.presignedGetObject(
       this.bucketName,
       objectKey,
       expiresInSeconds,
