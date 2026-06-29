@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { api } from '@/lib/api';
-import { formatFcfa, isApiError, CategoryWithCount } from '@/lib/format';
+import { formatFcfa, CategoryWithCount } from '@/lib/format';
+import { notify } from '@/lib/toast';
 
 // ─────────────────────────────────────────────
 // Types
@@ -155,6 +156,14 @@ function formToUpdatePayload(f: ProductFormData) {
 // Composant principal
 // ─────────────────────────────────────────────
 
+import { productSchema } from '@/lib/validations';
+
+function slugify(text: string) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export function ProductFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
@@ -164,7 +173,6 @@ export function ProductFormPage() {
 
   const [form, setForm] = useState<ProductFormData>(EMPTY_FORM);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [uploadMsg, setUploadMsg] = useState<string | null>(null);
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ['product', id],
@@ -192,9 +200,10 @@ export function ProductFormPage() {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       navigate(`/produits/${created.id}/modifier`);
+      notify.success('Produit créé');
     },
-    onError: (err) => {
-      setErrorMsg(isApiError(err) ? err.message : 'Erreur lors de la création');
+    onError: (_err: unknown) => {
+      notify.error('Erreur lors de la création');
     },
   });
 
@@ -205,24 +214,30 @@ export function ProductFormPage() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       navigate('/produits');
+      notify.success('Produit mis à jour');
     },
-    onError: (err) => {
-      setErrorMsg(isApiError(err) ? err.message : 'Erreur lors de la modification');
+    onError: (_err: unknown) => {
+      notify.error('Erreur lors de la modification');
     },
   });
 
   const uploadFileMutation = useMutation({
     mutationFn: (file: File) => {
+      const loaderId = notify.loading('Upload en cours...');
       const formData = new FormData();
       formData.append('file', file);
-      return api.postForm<Product>(`/products/${id}/upload-file`, formData, accessToken);
+      return api.postForm<Product>(`/products/${id}/upload`, formData, accessToken)
+        .then((res) => {
+          notify.success('Fichier uploadé ✓', { id: loaderId });
+          return res;
+        })
+        .catch((err) => {
+          notify.error('Erreur upload fichier', { id: loaderId });
+          throw err;
+        });
     },
-    onSuccess: (updated) => {
-      setUploadMsg(`Fichier uploadé : ${updated.filePath ?? 'OK'}`);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
-    },
-    onError: (err) => {
-      setUploadMsg(isApiError(err) ? err.message : 'Erreur upload fichier');
     },
   });
 
@@ -232,12 +247,12 @@ export function ProductFormPage() {
       Array.from(files).forEach((file) => formData.append('files', file));
       return api.postForm<Product>(`/products/${id}/upload-screenshots`, formData, accessToken);
     },
-    onSuccess: (updated) => {
-      setUploadMsg(`${updated.screenshots.length} capture(s) uploadée(s)`);
+    onSuccess: () => {
+      notify.success('Captures uploadées');
       queryClient.invalidateQueries({ queryKey: ['product', id] });
     },
-    onError: (err) => {
-      setUploadMsg(isApiError(err) ? err.message : 'Erreur upload captures');
+    onError: () => {
+      notify.error('Erreur upload captures');
     },
   });
 
@@ -258,18 +273,24 @@ export function ProductFormPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    // Validations basiques
-    if (!form.name.trim()) return setErrorMsg('Le nom du produit est obligatoire');
-    if (!form.categoryId) return setErrorMsg('La catégorie est obligatoire');
-    const priceNum = parseInt(form.price, 10);
-    if (isNaN(priceNum) || priceNum < 500) {
-      return setErrorMsg('Le prix doit être un entier d\'au moins 500 FCFA');
+    const payload = isEditing ? formToUpdatePayload(form) : formToCreatePayload(form);
+    
+    // Validation Zod
+    const result = productSchema.safeParse({
+      ...payload,
+      slug: slugify(payload.name),
+      shortDescription: form.shortDescription, // On a besoin de valider la shortDescription aussi selon les règles
+    });
+
+    if (!result.success) {
+      setErrorMsg(result.error.issues[0].message);
+      return;
     }
 
     if (isEditing) {
-      updateMutation.mutate(formToUpdatePayload(form));
+      updateMutation.mutate(payload as ReturnType<typeof formToUpdatePayload>);
     } else {
-      createMutation.mutate(formToCreatePayload(form));
+      createMutation.mutate(payload as ReturnType<typeof formToCreatePayload>);
     }
   }
 
@@ -301,11 +322,12 @@ export function ProductFormPage() {
       </div>
 
       {errorMsg && (
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300">
+        <div className="mb-6 rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
           {errorMsg}
         </div>
       )}
 
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ── Section Informations générales ── */}
         <fieldset className="rounded-lg border p-4">
@@ -608,11 +630,8 @@ export function ProductFormPage() {
           <fieldset className="rounded-lg border p-4">
             <legend className="mb-3 px-2 text-sm font-semibold">Upload fichiers</legend>
 
-            {uploadMsg && (
-              <p className="mb-3 text-sm text-green-600 dark:text-green-400">{uploadMsg}</p>
-            )}
-
-            {product?.filePath && (
+            
+            {product && product.filePath && (
               <p className="mb-3 text-xs text-muted-foreground">
                 Fichier actuel : <code>{product.filePath}</code>
               </p>
@@ -622,6 +641,7 @@ export function ProductFormPage() {
               <label className="mb-1 block text-sm font-medium">Fichier produit (APK, ZIP…)</label>
               <input
                 type="file"
+                accept=".apk,.exe,.zip,.dmg"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) uploadFileMutation.mutate(file);
@@ -645,7 +665,7 @@ export function ProductFormPage() {
                 disabled={uploadScreenshotsMutation.isPending}
                 className="block w-full text-sm"
               />
-              {product?.screenshots && product.screenshots.length > 0 && (
+              {product && product.screenshots && product.screenshots.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {product.screenshots.map((url) => (
                     <span key={url} className="rounded bg-muted px-2 py-1 text-xs">{url}</span>

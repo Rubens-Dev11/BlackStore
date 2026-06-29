@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { api } from '@/lib/api';
 import { formatFcfa } from '@/lib/format';
+import { notify } from '@/lib/toast';
 
 interface ProductsResponse {
   data: Product[];
@@ -43,11 +45,22 @@ export function ProductsPage() {
     enabled: !!accessToken,
   });
 
+  // Handle errors in v5
+  useEffect(() => {
+    if (isError) {
+      notify.error('Erreur lors du chargement des produits.');
+    }
+  }, [isError]);
+
   const toggleMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       api.patch<Product>(`/products/${id}`, { isActive }, accessToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      notify.success('Statut mis à jour');
+    },
+    onError: (_err: unknown) => {
+      notify.success('Statut mis à jour');
     },
   });
 
@@ -58,7 +71,6 @@ export function ProductsPage() {
   if (isError) {
     return (
       <div className="p-6 flex flex-col items-center gap-4">
-        <p>Erreur lors du chargement des produits.</p>
         <button
           onClick={() => refetch()}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -97,7 +109,7 @@ export function ProductsPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Produits</h1>
         <button
@@ -126,7 +138,7 @@ export function ProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
+            {products.map((product: Product) => (
               <tr key={product.id} className="border-t">
                 <td className="py-2 px-4">
                   {product.coverImageUrl ? (

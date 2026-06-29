@@ -2,10 +2,12 @@
   "name": "blackstore",
   "version": "1.0.0",
   "private": true,
+  "dependencies": {
+    "blackstore-shared": "file:packages/shared"
+  },
   "description": "BlackStore — Plateforme de Vente de Produits Numériques",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev:api": "npm run dev --workspace=apps/api",

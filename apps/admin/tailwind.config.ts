@@ -54,6 +54,25 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeInFast: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideInLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-out forwards',
+        'fade-in-fast': 'fadeInFast 0.2s ease-out forwards',
+        'slide-in-left': 'slideInLeft 0.3s ease-out forwards',
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],

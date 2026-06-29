@@ -24,7 +24,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const { accessToken, refreshToken } = await this.authService.login(loginDto);
 
-    // Set refresh token in httpOnly cookie
+    // Set refresh token in httpOnly cookie (optional, for compatibility)
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
@@ -33,7 +33,7 @@ export class AuthController {
     });
 
     this.logger.log(`Login réussi pour l'email: ${loginDto.email}`);
-    return { accessToken };
+    return { accessToken, refreshToken };
   }
 
   @Post('refresh')

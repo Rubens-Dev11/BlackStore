@@ -25,12 +25,7 @@ export class EmailProcessor extends WorkerHost {
           );
           break;
         case 'sendOrderConfirmation':
-          await this.emailService.sendOrderConfirmation(
-            job.data.to,
-            job.data.customerName,
-            job.data.orderNumber,
-            job.data.total,
-          );
+          await this.emailService.sendOrderConfirmation(job.data);
           break;
         default:
           throw new Error(`Unknown job type: ${job.name}`);

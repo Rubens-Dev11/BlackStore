@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Res,
   Body,
   Param,
   UseGuards,
@@ -14,6 +15,7 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import { Response } from 'express';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -98,6 +100,18 @@ export class OrdersController {
   @ApiResponse({ status: 409, description: 'Conflit' })
   async resendDownload(@Param('id') id: string) {
     return this.ordersService.resendDownload(id);
+  }
+  @Get('export')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Exporter les commandes en CSV' })
+  @ApiResponse({ status: 200, description: 'Fichier CSV' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async exportCsv(@Res() res: Response) {
+    const csv = await this.ordersService.exportCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="commandes.csv"');
+    res.send('\uFEFF' + csv); // BOM UTF-8 pour Excel
   }
 }
 

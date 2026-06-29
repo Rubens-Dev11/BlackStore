@@ -60,9 +60,9 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Fichier CSV' })
   @ApiResponse({ status: 401, description: 'Non autorisé' })
   async exportOrdersCsv(
+    @Res() res: Response,
     @Query('dateFrom') dateFromStr?: string,
     @Query('dateTo') dateToStr?: string,
-    @Res() res: Response,
   ) {
     const dateFrom = parseOptionalDate(dateFromStr, 'dateFrom');
     const dateTo = parseOptionalDate(dateToStr, 'dateTo');

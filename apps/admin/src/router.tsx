@@ -9,6 +9,8 @@ import { OrdersPage } from '@/pages/orders-page';
 import { ReviewsPage } from '@/pages/reviews-page';
 import { AnalyticsPage } from '@/pages/analytics-page';
 
+import { NotFoundPage } from '@/pages/not-found-page';
+
 export function AppRouter() {
   return (
     <Routes>
@@ -23,8 +25,8 @@ export function AppRouter() {
         <Route path="/commandes" element={<OrdersPage />} />
         <Route path="/avis" element={<ReviewsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

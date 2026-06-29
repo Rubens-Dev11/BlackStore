@@ -3,8 +3,9 @@ import { persist } from 'zustand/middleware';
 
 interface AuthState {
   accessToken: string | null;
+  refreshToken: string | null;
   _hasHydrated: boolean;
-  setAccessToken: (token: string) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
   setHasHydrated: (state: boolean) => void;
 }
@@ -13,9 +14,10 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       accessToken: null,
+      refreshToken: null,
       _hasHydrated: false,
-      setAccessToken: (token: string) => set({ accessToken: token }),
-      clearAuth: () => set({ accessToken: null }),
+      setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
+      clearAuth: () => set({ accessToken: null, refreshToken: null }),
       setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
     }),
     {

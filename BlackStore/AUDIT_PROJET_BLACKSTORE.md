@@ -1,5 +1,7 @@
 # Audit du Projet BlackStore
 
+> ⚠️ **DOCUMENT ARCHIVÉ / OBSOLÈTE (2024-06-14).** Cet audit est générique et ne reflète plus l'état du projet. Les points soulevés (bug 401, builds, structure) sont résolus ou caducs. Se référer à [`ArchitecteBlackstore.md`](../ArchitecteBlackstore.md) (passation à jour) et au `README.md`. Conservé uniquement à titre d'historique.
+
 **Date de l'audit :** 2024-06-14
 **Auditeur :** Développeur Senior Expérimenté
 

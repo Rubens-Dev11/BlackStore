@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/use-auth-store';
-
-interface LoginForm {
-  email: string;
-  password: string;
-}
+import { notify } from '@/lib/toast';
+import { loginSchema } from '@/lib/validations';
 
 interface LoginResponse {
   accessToken: string;
@@ -14,16 +11,20 @@ interface LoginResponse {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { accessToken, setAccessToken } = useAuthStore();
-  const [form, setForm] = useState<LoginForm>({ email: '', password: '' });
-  const [error, setError] = useState<string | null>(null);
+  const { accessToken, setTokens } = useAuthStore();
+  const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
+    const result = loginSchema.safeParse(form);
+    if (!result.success) {
+      notify.error(result.error.issues[0].message);
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
@@ -33,15 +34,16 @@ export function LoginPage() {
 
       if (response.ok) {
         const data: LoginResponse = await response.json();
-        setAccessToken(data.accessToken);
+        setTokens(data.accessToken, data.refreshToken);
         navigate('/dashboard');
+        notify.success('Connexion réussie');
       } else if (response.status === 401) {
-        setError('Identifiants incorrects.');
+        notify.error('Email ou mot de passe incorrect');
       } else {
-        setError('Erreur serveur. Réessayez.');
+        notify.error('Erreur serveur. Réessayez.');
       }
     } catch (err) {
-      setError('Erreur serveur. Réessayez.');
+      notify.error('Erreur serveur. Réessayez.');
     } finally {
       setLoading(false);
     }
@@ -90,7 +92,6 @@ export function LoginPage() {
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         </form>
       </div>
     </div>

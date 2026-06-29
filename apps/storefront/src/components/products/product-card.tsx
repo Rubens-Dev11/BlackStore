@@ -80,30 +80,30 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
       {/* Contenu */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="line-clamp-2 text-sm font-semibold text-white group-hover:text-orange-400">
+        <h3 className="line-clamp-2 text-base font-semibold text-white group-hover:text-orange-400">
           {product.name}
         </h3>
         {product.shortDescription && (
-          <p className="line-clamp-2 text-xs text-zinc-400">
+          <p className="line-clamp-2 text-sm text-zinc-400">
             {product.shortDescription}
           </p>
         )}
         {/* Stats */}
-        <div className="mt-auto flex items-center gap-3 pt-2 text-xs text-zinc-500">
-          {(product.ratingCount ?? 0) > 0 && (
+        <div className="mt-auto flex items-center gap-3 pt-2 text-sm text-zinc-500">
+          {(parseInt(String(product.ratingCount ?? '0'))) > 0 && (
             <span className="flex items-center gap-1">
               <Star className="h-3 w-3 fill-orange-400 text-orange-400" />
-              {(product.ratingAvg ?? 0).toFixed(1)} ({product.ratingCount})
+              {(parseFloat(String(product.ratingAvg ?? '0'))).toFixed(1)} ({parseInt(String(product.ratingCount ?? '0'))})
             </span>
           )}
           <span className="flex items-center gap-1">
             <Download className="h-3 w-3" />
-            {(product.downloadCount ?? 0).toLocaleString('fr-FR')}
+            {parseInt(String(product.downloadCount ?? '0')).toLocaleString('fr-FR')}
           </span>
         </div>
         {/* Prix */}
         <div className="flex items-baseline gap-2 pt-1">
-          <span className="text-lg font-bold text-orange-400">
+          <span className="text-xl font-bold text-orange-400">
             {formatFcfa(product.price)}
           </span>
           {hasDiscount && (
@@ -117,14 +117,14 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
             onClick={handleBuyNow}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2 font-semibold text-sm text-white transition-colors hover:bg-orange-600"
+            className="w-full sm:w-auto sm:flex-1 flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2 font-semibold text-sm text-white transition-colors hover:bg-orange-600"
           >
             <Zap className="h-3 w-3" />
             Acheter maintenant
           </button>
           <button
             onClick={handleAddToCart}
-            className={`w-full flex items-center justify-center gap-2 rounded-lg border px-4 py-2 font-semibold text-sm transition-all ${
+            className={`w-full sm:w-auto sm:flex-1 flex items-center justify-center gap-2 rounded-lg border px-4 py-2 font-semibold text-sm transition-all ${
               addedToCart
                 ? 'border-green-500 bg-green-900/30 text-green-400'
                 : 'border-zinc-600 text-zinc-300 hover:border-orange-500 hover:text-white'
