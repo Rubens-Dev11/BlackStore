@@ -48,6 +48,7 @@ services:
     volumes:
       - ./apps/storefront/src:/app/src
       - ./apps/storefront/public:/app/public
+      - ./apps/storefront/package.json:/app/package.json
       - ./apps/storefront/tailwind.config.ts:/app/tailwind.config.ts
       - ./apps/storefront/postcss.config.js:/app/postcss.config.js
       - /app/node_modules
@@ -75,6 +76,7 @@ services:
       - "3002:3002"
     volumes:
       - ./apps/admin/src:/app/src
+      - ./packages:/app/packages
       - /app/node_modules
     environment:
       - NODE_ENV=development

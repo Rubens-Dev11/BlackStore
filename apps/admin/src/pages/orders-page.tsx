@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { api } from '@/lib/api';
 import { formatFcfa } from '@/lib/format';
+import { notify } from '@/lib/toast';
 
 // ─────────────────────────────────────────────
 // Types
@@ -62,16 +63,18 @@ export function OrdersPage() {
   });
 
   async function exportCsv() {
+    const loaderId = notify.loading('Génération du CSV...');
     try {
-      const blob = await api.getBlob('/dashboard/export-orders', accessToken);
+      const blob = await api.getBlob('/orders/export', accessToken);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = 'commandes.csv';
       link.click();
       URL.revokeObjectURL(url);
+      notify.success('Export CSV effectué', { id: loaderId });
     } catch {
-      alert('Erreur lors de l\'export CSV');
+      notify.error('Erreur lors de l\'export CSV', { id: loaderId });
     }
   }
 
@@ -80,7 +83,7 @@ export function OrdersPage() {
     filterStatus === 'all' ? orders : orders.filter((o) => o.status === filterStatus);
 
   return (
-    <div className="p-6">
+    <div className="p-6 animate-fade-in">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Commandes</h1>
         <button

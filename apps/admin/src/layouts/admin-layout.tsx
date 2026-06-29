@@ -62,7 +62,9 @@ export function AdminLayout() {
           </button>
         </header>
         <main className="flex-1 p-6">
-          <Outlet />
+          <div className="animate-fade-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

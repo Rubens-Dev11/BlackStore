@@ -1,6 +1,10 @@
 # BlackStore — Plateforme de Vente de Produits Numériques
 
-Plateforme e-commerce mono-vendeur spécialisée dans la vente et la distribution automatisée de produits numériques (APK, Logiciels Desktop, ZIP) pour le marché africain, avec paiement via CinetPay.
+Plateforme e-commerce mono-vendeur spécialisée dans la vente et la distribution automatisée de produits numériques (APK, Logiciels Desktop, ZIP) pour le marché africain.
+
+> **État au 29 juin 2026** — API NestJS, Storefront Next.js et Admin React compilent et tournent en local. Déploiement VPS + SSL en attente. Voir [`ArchitecteBlackstore.md`](ArchitecteBlackstore.md) pour la passation à jour.
+>
+> **Paiement** — Le code actuel intègre **CinetPay**. Une migration vers **Tara** (taramoney.com) est planifiée mais **en attente de la documentation et des clés API**. Ne pas modifier le module `payments` avant réception de la doc Tara.
 
 ## Démarrage rapide
 
@@ -15,7 +19,7 @@ cd blackstore
 cp .env.example .env
 npm install
 ```
-*Note : Éditer le fichier `.env` avec vos vraies clés API (CinetPay, etc).*
+*Note : Éditer le fichier `.env` avec vos vraies clés API (CinetPay aujourd'hui, Tara à terme, etc).*
 
 ### Démarrer tout l'environnement (Phase 1)
 ```bash
@@ -30,10 +34,10 @@ docker compose up --build
 | Admin Dashboard  | http://localhost:3002      | React + Vite (Gestion privée) |
 | API NestJS       | http://localhost:3000      | Backend |
 | API Swagger      | http://localhost:3000/docs | Documentation de l'API |
-| PostgreSQL       | localhost:5432             | Base de données |
+| PostgreSQL       | localhost:5433             | Base de données (mappé 5433→5432) |
 | Redis            | localhost:6379             | Cache et Queues |
 | MinIO Console    | http://localhost:9001      | Panneau de gestion du stockage (identifiants dans `.env`) |
-| MailHog          | http://localhost:8025      | Serveur SMTP local (Emails) |
+| MailHog          | http://localhost:8027      | Serveur SMTP local (Emails, mappé 8027→8025) |
 
 ### Initialiser la base de données (première fois)
 

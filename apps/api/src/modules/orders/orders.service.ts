@@ -224,4 +224,61 @@ export class OrdersService {
 
     return order;
   }
+
+  async exportCsv(): Promise<string> {
+    const orders = await this.prisma.order.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        orderNumber: true,
+        buyerName: true,
+        buyerEmail: true,
+        buyerPhone: true,
+        totalAmount: true,
+        status: true,
+        paymentMethod: true,
+        createdAt: true,
+      },
+    });
+
+    const headers = [
+      'Numéro',
+      'Acheteur',
+      'Email',
+      'Téléphone',
+      'Montant (FCFA)',
+      'Statut',
+      'Méthode paiement',
+      'Date',
+    ];
+
+    const rows = orders.map((order) =>
+      [
+        order.orderNumber,
+        order.buyerName,
+        order.buyerEmail,
+        order.buyerPhone ?? '',
+        order.totalAmount,
+        order.status,
+        order.paymentMethod ?? '—',
+        order.createdAt.toISOString(),
+      ]
+        .map((field) => this.escapeCsvField(field))
+        .join(','),
+    );
+
+    this.logger.log(`Export CSV commandes — ${orders.length} ligne(s)`);
+
+    return [headers.join(','), ...rows].join('\n');
+  }
+
+  private escapeCsvField(value: string | number | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const str = String(value);
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  }
 }

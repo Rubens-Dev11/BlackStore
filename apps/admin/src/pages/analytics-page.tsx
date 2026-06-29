@@ -59,7 +59,7 @@ export function AnalyticsPage() {
     ordersCreated === 0 ? 0 : Math.round((ordersPaid / ordersCreated) * 10000) / 100;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">Analytics</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { api } from '@/lib/api';
-import { isApiError, CategoryWithCount } from '@/lib/format';
+import { CategoryWithCount } from '@/lib/format';
+import { notify } from '@/lib/toast';
+import { categorySchema } from '@/lib/validations';
 
 // ─────────────────────────────────────────────
 // Types
@@ -44,6 +46,12 @@ function formToPayload(f: CategoryFormData) {
   };
 }
 
+function slugify(text: string) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // ─────────────────────────────────────────────
 // Composant
 // ─────────────────────────────────────────────
@@ -55,7 +63,6 @@ export function CategoriesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryWithCount | null>(null);
   const [form, setForm] = useState<CategoryFormData>(EMPTY_FORM);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: categories = [], isLoading } = useQuery({
@@ -70,9 +77,10 @@ export function CategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       closeForm();
+      notify.success('Catégorie créée');
     },
-    onError: (err) => {
-      setErrorMsg(isApiError(err) ? err.message : 'Erreur lors de la création');
+    onError: (_err: unknown) => {
+      notify.error('Erreur lors de la création');
     },
   });
 
@@ -82,9 +90,10 @@ export function CategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       closeForm();
+      notify.success('Catégorie mise à jour');
     },
-    onError: (err) => {
-      setErrorMsg(isApiError(err) ? err.message : 'Erreur lors de la modification');
+    onError: (_err: unknown) => {
+      notify.error('Erreur lors de la modification');
     },
   });
 
@@ -93,9 +102,10 @@ export function CategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setDeletingId(null);
+      notify.success('Catégorie supprimée');
     },
-    onError: (err) => {
-      alert(isApiError(err) ? err.message : 'Erreur lors de la suppression');
+    onError: (_err: unknown) => {
+      notify.error('Erreur lors de la suppression');
       setDeletingId(null);
     },
   });
@@ -103,14 +113,12 @@ export function CategoriesPage() {
   function openCreate() {
     setEditingCategory(null);
     setForm(EMPTY_FORM);
-    setErrorMsg(null);
     setShowForm(true);
   }
 
   function openEdit(cat: CategoryWithCount) {
     setEditingCategory(cat);
     setForm(categoryToForm(cat));
-    setErrorMsg(null);
     setShowForm(true);
   }
 
@@ -118,7 +126,6 @@ export function CategoriesPage() {
     setShowForm(false);
     setEditingCategory(null);
     setForm(EMPTY_FORM);
-    setErrorMsg(null);
   }
 
   function handleChange(
@@ -134,9 +141,18 @@ export function CategoriesPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setErrorMsg(null);
-    if (!form.name.trim()) return setErrorMsg('Le nom est obligatoire');
+    
     const payload = formToPayload(form);
+    const result = categorySchema.safeParse({
+      ...payload,
+      slug: slugify(payload.name),
+    });
+
+    if (!result.success) {
+      notify.error(result.error.issues[0].message);
+      return;
+    }
+
     if (editingCategory) {
       updateMutation.mutate({ id: editingCategory.id, payload });
     } else {
@@ -146,9 +162,7 @@ export function CategoriesPage() {
 
   function confirmDelete(cat: CategoryWithCount) {
     if (cat._count.products > 0) {
-      alert(
-        `Impossible de supprimer "${cat.name}" : ${cat._count.products} produit(s) y sont associés. Déplacez d'abord les produits vers une autre catégorie.`,
-      );
+      notify.error(`Impossible de supprimer "${cat.name}" : ${cat._count.products} produit(s) y sont associés. Déplacez d'abord les produits vers une autre catégorie.`);
       return;
     }
     if (confirm(`Supprimer la catégorie "${cat.name}" ? Cette action est irréversible.`)) {
@@ -182,12 +196,7 @@ export function CategoriesPage() {
             {editingCategory ? `Modifier « ${editingCategory.name} »` : 'Nouvelle catégorie'}
           </h2>
 
-          {errorMsg && (
-            <div className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300">
-              {errorMsg}
-            </div>
-          )}
-
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>

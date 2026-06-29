@@ -96,7 +96,7 @@ export class ProductsController {
     return this.productsService.remove(id);
   }
 
-  @Post(':id/upload-file')
+  @Post(':id/upload')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
@@ -116,8 +116,8 @@ export class ProductsController {
   @ApiResponse({ status: 401, description: 'Non autorisé' })
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
   @UseInterceptors(FileInterceptor('file'))
-  async uploadProductFile(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
-    return this.productsService.uploadProductFile(id, file);
+  async uploadFile(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.productsService.uploadFile(id, file);
   }
 
   @Post(':id/upload-screenshots')

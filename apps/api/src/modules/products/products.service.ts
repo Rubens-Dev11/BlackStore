@@ -241,12 +241,14 @@ export class ProductsService {
     });
   }
 
-  async uploadProductFile(id: string, file: Express.Multer.File) {
+  async uploadFile(id: string, file: Express.Multer.File) {
     await this.findById(id);
+
+    const objectName = `products/${id}/${file.originalname}`;
 
     const { objectKey, sha256, sizeBytes } = await this.fileStorageService.uploadFile(
       file.buffer,
-      file.originalname,
+      objectName,
       file.mimetype,
     );
 

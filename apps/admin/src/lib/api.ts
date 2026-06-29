@@ -3,61 +3,140 @@ import { useAuthStore } from '@/stores/use-auth-store';
 
 const BASE_URL = getApiUrl();
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  accessToken?: string | null
-): Promise<T> {
-  const token = accessToken ?? useAuthStore.getState().accessToken;
+let isRefreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
 
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> || {}),
+async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise<Response> {
+  let token = useAuthStore.getState().accessToken;
+
+  const performFetch = async (token: string | null): Promise<Response> => {
+    const headers: Record<string, string> = {
+      ...(init?.headers as Record<string, string> || {}),
+    };
+
+    // Determine if body is FormData to avoid overwriting Content-Type
+    const isFormData = (init?.body as FormData) instanceof FormData;
+    if (!isFormData && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Les appelants (api.get/post/...) passent déjà l'URL complète (BASE_URL + path).
+    // Ne PAS re-préfixer BASE_URL ici, sinon l'URL est doublée et fetch échoue.
+    const response = await fetch(typeof input === 'string' ? input : input.url, {
+      ...init,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Network error' }));
+      throw { status: response.status, message: error.message || 'Server error' };
+    }
+
+    return response;
   };
 
-  const isFormData = options.body instanceof FormData;
-  if (!isFormData && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/json';
+  try {
+    return await performFetch(token);
+  } catch (err: any) {
+    if (err.status === 401 && token) {
+      const { refreshToken } = useAuthStore.getState();
+      if (!refreshToken) {
+        // No refresh token, logout
+        useAuthStore.getState().clearAuth();
+        window.location.href = '/login';
+        throw err;
+      }
+
+      if (isRefreshing) {
+        // Wait for ongoing refresh
+        return new Promise<Response>((resolve, reject) => {
+          refreshQueue.push((newToken: string) => {
+            // Retry original request with new token
+            fetchWithRefresh(input, { ...init, headers: { ...(init?.headers || {}), Authorization: `Bearer ${newToken}` } })
+              .then(resolve)
+              .catch(reject);
+          });
+        });
+      }
+
+      isRefreshing = true;
+      try {
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!refreshResponse.ok) {
+          throw new Error('Refresh failed');
+        }
+
+        const data = await refreshResponse.json();
+        const newAccessToken = data.accessToken;
+        const newRefreshToken = data.refreshToken ?? refreshToken;
+
+        // Update store with new tokens
+        useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
+
+        // Retry original request with new token
+        const result = await fetchWithRefresh(input, {
+          ...init,
+          headers: { ...(init?.headers || {}), Authorization: `Bearer ${newAccessToken}` },
+        });
+
+        // Flush queue
+        refreshQueue.forEach((cb) => cb(newAccessToken));
+        refreshQueue = [];
+
+        return result;
+      } catch (err) {
+        refreshQueue = [];
+        throw err;
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    throw err;
   }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-    throw { status: response.status, message: error.message || 'Erreur serveur' };
-  }
-
-  return response.json();
 }
 
 export const api = {
   get: <T>(path: string, accessToken?: string | null) =>
-    request<T>(path, { method: 'GET' }, accessToken),
+    fetchWithRefresh(`${BASE_URL}${path}`, { method: 'GET', headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' } })
+      .then((res) => res.json()) as Promise<T>,
   post: <T>(path: string, body: unknown, accessToken?: string | null) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }, accessToken),
+    fetchWithRefresh(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: accessToken ? `Bearer ${accessToken}` : '' },
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json()) as Promise<T>,
   postForm: <T>(path: string, body: FormData, accessToken?: string | null) =>
-    request<T>(path, { method: 'POST', body }, accessToken),
+    fetchWithRefresh(`${BASE_URL}${path}`, {
+      method: 'POST',
+      body,
+      headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' },
+    })
+      .then((res) => res.json()) as Promise<T>,
   patch: <T>(path: string, body: unknown, accessToken?: string | null) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }, accessToken),
+    fetchWithRefresh(`${BASE_URL}${path}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: accessToken ? `Bearer ${accessToken}` : '' },
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json()) as Promise<T>,
   delete: <T>(path: string, accessToken?: string | null) =>
-    request<T>(path, { method: 'DELETE' }, accessToken),
+    fetchWithRefresh(`${BASE_URL}${path}`, { method: 'DELETE', headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' } })
+      .then((res) => res.json()) as Promise<T>,
   getBlob: async (path: string, accessToken?: string | null): Promise<Blob> => {
-    const token = accessToken ?? useAuthStore.getState().accessToken;
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    const response = await fetch(`${BASE_URL}${path}`, { headers });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw { status: response.status, message: error.message || 'Erreur serveur' };
-    }
-    return response.blob();
+    const res = await fetchWithRefresh(`${BASE_URL}${path}`, {
+      method: 'GET',
+      headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' },
+    });
+    return res.blob();
   },
 };

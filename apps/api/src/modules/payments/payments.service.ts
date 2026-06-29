@@ -241,6 +241,21 @@ export class PaymentsService {
       downloadLinks,
     );
 
+    const emailItems = downloadTokens.map((t) => ({
+      productName: t.orderItem.product.name,
+      token: t.token,
+      expiresAt: t.expiresAt,
+      maxDownloads: t.maxDownloads,
+    }));
+
+    await this.emailService.sendOrderConfirmation({
+      buyerName: order.buyerName,
+      buyerEmail: order.buyerEmail,
+      orderNumber: order.orderNumber,
+      items: emailItems,
+      totalAmount: Number(order.totalAmount),
+    });
+
     this.logger.log(`Paiement confirmé pour la commande ${order.id} — Email envoyé`);
   }
 }
