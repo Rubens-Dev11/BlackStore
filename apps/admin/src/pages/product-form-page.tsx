@@ -126,6 +126,7 @@ function formToCreatePayload(f: ProductFormData) {
     downloadLimit: parseInt(f.maxDownloads, 10) || 3,
     downloadExpiryHours: parseInt(f.downloadExpiryHours, 10) || 72,
     isFeatured: f.isFeatured,
+    platform: f.platform,
   };
 }
 
@@ -149,6 +150,7 @@ function formToUpdatePayload(f: ProductFormData) {
     downloadExpiryHours: parseInt(f.downloadExpiryHours, 10) || undefined,
     isFeatured: f.isFeatured,
     isActive: f.isActive,
+    ...(f.platform && { platform: f.platform }),
   };
 }
 

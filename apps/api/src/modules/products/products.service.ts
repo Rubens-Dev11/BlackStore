@@ -4,6 +4,7 @@ import { FileStorageService } from '../file-storage/file-storage.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { Platform } from '@prisma/client';
 import 'multer';
 
 @Injectable()
@@ -153,6 +154,7 @@ export class ProductsService {
         version: true,
         isFeatured: true,
         viewCount: true,
+        platform: true,
         category: {
           select: { id: true, name: true, slug: true },
       },
@@ -233,6 +235,7 @@ export class ProductsService {
         maxDownloads: createProductDto.downloadLimit || 3,
         downloadExpiryHours: createProductDto.downloadExpiryHours || 72,
         isFeatured: createProductDto.isFeatured || false,
+        platform: createProductDto.platform || Platform.android,
       },
     });
   }
@@ -258,6 +261,7 @@ export class ProductsService {
         downloadExpiryHours: updateProductDto.downloadExpiryHours,
         isFeatured: updateProductDto.isFeatured,
         isActive: updateProductDto.isActive,
+        ...(updateProductDto.platform !== undefined && { platform: updateProductDto.platform }),
       },
     });
   }
