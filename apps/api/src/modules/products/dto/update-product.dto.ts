@@ -1,9 +1,13 @@
 import { PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsIn } from 'class-validator';
 import { CreateProductDto } from './create-product.dto';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsIn(['android', 'desktop', 'multiplatform'], { message: 'Plateforme invalide' })
+  platform?: 'android' | 'desktop' | 'multiplatform';
 }

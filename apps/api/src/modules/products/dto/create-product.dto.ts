@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsBoolean, IsUUID, Min, MinLength } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean, IsUUID, Min, MinLength, IsIn } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -35,4 +35,8 @@ export class CreateProductDto {
   @IsBoolean()
   @IsOptional()
   isFeatured?: boolean;
+
+  @IsOptional()
+  @IsIn(['android', 'desktop', 'multiplatform'], { message: 'Plateforme invalide' })
+  platform?: 'android' | 'desktop' | 'multiplatform';
 }
