@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 export const checkoutSchema = z.object({
-  buyerName: z.string()
+  customerName: z.string()
     .min(2, 'Le nom doit contenir au moins 2 caractères')
     .max(100, 'Le nom est trop long'),
-  buyerEmail: z.string()
+  customerEmail: z.string()
     .email('Adresse email invalide'),
-  buyerPhone: z.string()
+  customerPhone: z.string()
     .regex(/^\+?[0-9\s\-]{8,15}$/, 'Numéro de téléphone invalide')
     .optional()
     .or(z.literal('')),

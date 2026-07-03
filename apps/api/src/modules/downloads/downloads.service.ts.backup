@@ -43,22 +43,18 @@ export class DownloadsService {
       data: { downloadCount: downloadToken.downloadCount + 1 },
     });
 
-    // Extract the actual filename from filePath
-    const filePath = downloadToken.orderItem.product.filePath || '';
-    const fileName = filePath.split('/').pop() || downloadToken.orderItem.product.name;
-
     const presignedUrl = await this.fileStorageService.getPresignedUrl(
-      filePath,
+      downloadToken.orderItem.product.filePath || '',
       3600,
       {
-        'response-content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+        'response-content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(downloadToken.orderItem.product.name)}`,
         'response-content-type': 'application/octet-stream',
       },
     );
 
     return {
       presignedUrl,
-      fileName: downloadToken.orderItem.product.name, // Keep original product name for response? The spec expects product.name? We'll keep as before.
+      fileName: downloadToken.orderItem.product.name,
       mimeType: 'application/octet-stream',
     };
   }

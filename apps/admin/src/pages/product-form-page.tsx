@@ -59,6 +59,7 @@ interface ProductFormData {
   maxDownloads: string;
   downloadExpiryHours: string;
   filePath: string;
+  isFree: boolean;
 }
 
 const EMPTY_FORM: ProductFormData = {
@@ -83,6 +84,7 @@ const EMPTY_FORM: ProductFormData = {
   maxDownloads: '3',
   downloadExpiryHours: '72',
   filePath: '',
+  isFree: false,
 };
 
 function productToForm(p: Product): ProductFormData {
@@ -108,6 +110,7 @@ function productToForm(p: Product): ProductFormData {
     maxDownloads: String(p.maxDownloads),
     downloadExpiryHours: String(p.downloadExpiryHours),
     filePath: p.filePath ?? '',
+    isFree: p.price === 0,
   };
 }
 
@@ -261,13 +264,30 @@ export function ProductFormPage() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       setForm((prev) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+
+      // Special handling for isFree checkbox
+      if (name === 'isFree') {
+        setForm((prev) => ({
+          ...prev,
+          price: e.target.checked ? '0' : prev.price,
+        }));
+      }
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
+
+      // Special handling for price input
+      if (name === 'price') {
+        const priceValue = parseInt(value, 10);
+        setForm((prev) => ({
+          ...prev,
+          isFree: priceValue === 0,
+        }));
+      }
     }
   }
 
@@ -416,21 +436,42 @@ export function ProductFormPage() {
               <label className="mb-1 block text-sm font-medium">
                 Prix en FCFA <span className="text-red-500">*</span>
               </label>
-              <input
-                name="price"
-                type="number"
-                min="1"
-                value={form.price}
-                onChange={handleChange}
-                required
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Ex: 5000"
-              />
-              {form.price && !isNaN(parseInt(form.price)) && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  = {formatFcfa(parseInt(form.price))}
-                </p>
-              )}
+              <div className="flex items-center space-x-3">
+                <input
+                  name="price"
+                  type="number"
+                  min="0"
+                  value={form.price}
+                  onChange={handleChange}
+                  required
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Ex: 5000"
+                  disabled={form.isFree}
+                />
+                {!form.isFree && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    = {formatFcfa(parseInt(form.price || '0'))}
+                  </p>
+                )}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    name="isFree"
+                    checked={form.isFree}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        isFree: e.target.checked,
+                        price: e.target.checked ? '0' : prev.price,
+                      }));
+                    }}
+                    className="h-4 w-4 text-primary"
+                  />
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Produit gratuit
+                  </label>
+                </div>
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">
@@ -439,7 +480,7 @@ export function ProductFormPage() {
               <input
                 name="originalPrice"
                 type="number"
-                min="1"
+                min="0"
                 value={form.originalPrice}
                 onChange={handleChange}
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"

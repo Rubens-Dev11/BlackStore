@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(X-Amz-Algorithm=AWS4-HMAC-SHA256)",
+      "Bash(X-Amz-Credential=blackstore_minio%2F20260630%2Fus-east-1%2Fs3%2Faws4_request)",
+      "Bash(X-Amz-Date=20260630T222547Z)",
+      "Bash(X-Amz-Expires=3600)",
+      "Bash(X-Amz-SignedHeaders=host)",
+      "Bash(cp /c:/Users/BSE/Desktop/BlackStore/apps/storefront/src/app/panier/page.tsx /c:/Users/BSE/Desktop/BlackStore/apps/storefront/src/app/panier/page.tsx.bak)",
+      "Bash(cp apps/api/src/modules/file-storage/file-storage.service.ts apps/api/src/modules/file-storage/file-storage.service.ts.backup)",
+      "Bash(tee /tmp/curl.out)",
+      "Bash(cp apps/api/src/modules/orders/orders.service.ts /tmp/orders.service.ts.original)",
+      "Bash(awk '/downloadLink: await this\\\\.fileStorageService\\\\.getPresignedUrl\\\\\\(/ { print \\\\\"          downloadLink: \\(async \\(\\) => {\\\\\"; print \\\\\"            const filePath = token.orderItem.product.filePath ?? \\\\\\\\\\\\\"\\\\\\\\\\\\\";\\\\\"; print \\\\\"            const fileName = filePath.split\\(\\\\\\\\\\\\\"/\\\\\\\\\\\\\"\\).pop\\(\\) || \\\\\\\\\\\\\"file\\\\\\\\\\\\\"\\\\\"; print \\\\\"            return await this.fileStorageService.getPresignedUrl\\(\\\\\"; print \\\\\"              filePath,\\\\\"; print \\\\\"              900,\\\\\"; print \\\\\"              {\\\\\"; print \\\\\"                \\\\\\\\'response-content-disposition\\\\\\\\': \\\\\\\\`attachment; filename*=UTF-8\\\\\\\\'\\\\\\\\'${encodeURIComponent\\(fileName\\)}\\\\\\\\`,\\\\\"; print \\\\\"                \\\\\\\\'response-content-type\\\\\\\\': \\\\\\\\\\\\\"application/octet-stream\\\\\\\\\\\\\",\\\\\"; print \\\\\"              },\"; print \\\\\"            \\);\"; print \\\\\"          }\\)\\(\\),\\\\\"; skip = 3; next } skip > 0 { skip--; next } { print }' apps/api/src/modules/orders/orders.service.ts)",
+      "Bash(docker pull *)"
+    ],
+    "additionalDirectories": [
+      "\\c:\\Users\\BSE\\Desktop\\BlackStore\\apps\\storefront\\src\\app\\panier",
+      "C:\\Users\\BSE\\Desktop\\BlackStore\\apps\\api\\src\\modules\\file-storage",
+      "\\tmp"
+    ]
+  }
+}
