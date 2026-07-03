@@ -10,7 +10,7 @@ export class CreateProductDto {
   description!: string;
 
   @IsNumber()
-  @Min(500)
+  @Min(0)
   price!: number;
 
   @IsUUID()

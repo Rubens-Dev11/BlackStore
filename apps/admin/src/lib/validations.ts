@@ -9,8 +9,7 @@ export const productSchema = z.object({
     .min(10, 'Description courte requise (min 10 caractères)')
     .max(200, 'Description courte trop longue (max 200)'),
   price: z.coerce.number({ message: 'Le prix doit être un nombre' })
-    .min(1, 'Prix requis')
-    .positive('Le prix doit être positif'),
+    .min(0, 'Le prix ne peut pas être négatif'),
   categoryId: z.string().min(1, 'Catégorie requise'),
   platform: z.enum(['android', 'desktop', 'multiplatform'],
     { message: 'Plateforme invalide' }).optional(),

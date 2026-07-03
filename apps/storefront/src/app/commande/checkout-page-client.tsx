@@ -14,22 +14,23 @@ export function CheckoutPageClient() {
   const [mounted, setMounted] = useState(false);
   const { items, getTotalAmount, clearCart } = useCartStore();
   const [form, setForm] = useState<CheckoutFormData>({
-    buyerName: '',
-    buyerEmail: '',
-    buyerPhone: '',
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [isCompletingOrder, setIsCompletingOrder] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  // Rediriger si panier vide (après mount)
+  // Rediriger si panier vide (après mount), mais pas en cours de finalisation de commande
   useEffect(() => {
-    if (mounted && items.length === 0) {
+    if (mounted && items.length === 0 && !isCompletingOrder) {
       router.replace('/panier');
     }
-  }, [mounted, items, router]);
+  }, [mounted, items, router, isCompletingOrder]);
 
   if (!mounted || items.length === 0) {
     return (
@@ -41,7 +42,7 @@ export function CheckoutPageClient() {
 
   const total = getTotalAmount();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const name = e.target.name as keyof CheckoutFormData;
     const value = e.target.value;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -52,7 +53,7 @@ export function CheckoutPageClient() {
 
   const handleSubmit = async () => {
     setGlobalError(null);
-    
+
     const result = checkoutSchema.safeParse(form);
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof CheckoutFormData, string>> = {};
@@ -67,24 +68,22 @@ export function CheckoutPageClient() {
     }
 
     setIsSubmitting(true);
+    setIsCompletingOrder(true); // Empêche la redirection vers /panier pendant la finalisation
 
     try {
-      // ⚠️ OrderItem n'a PAS de champ quantity — on répète les items selon la quantité
-      const orderItems = items.flatMap((item) =>
-        Array.from({ length: item.quantity }, () => ({
-          productId: item.productId,
-          priceAtPurchase: item.price,
-        })),
-      );
+      // Map cart items to order items with quantity
+      const orderItems = items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
 
       // 1. Créer la commande
       const order = await createOrder({
-        buyerName: form.buyerName.trim(),
-        buyerEmail: form.buyerEmail.toLowerCase().trim(),
-        buyerPhone: form.buyerPhone?.trim() ?? '',
+        customerName: form.customerName.trim(),
+        customerEmail: form.customerEmail.toLowerCase().trim(),
+        customerPhone: form.customerPhone?.trim() ?? '',
         items: orderItems,
-        totalAmount: total,
-        currency: 'XAF',
+        // totalAmount and currency are removed as they are not expected by the DTO
       });
 
       // 2. Stocker en sessionStorage pour la page succès (Option A)
@@ -96,7 +95,17 @@ export function CheckoutPageClient() {
         }),
       );
 
-      // 3. Initier le paiement
+      // 3. Pour les commandes gratuites, pas besoin de paiement - rediriger directement vers succès
+      if (total === 0) {
+        // 4. Vider le panier AVANT la redirection
+        clearCart();
+
+        // 5. Redirection vers la page de succès
+        router.push('/commande/succes');
+        return;
+      }
+
+      // 3. Initier le paiement (pour les commandes payantes)
       const payment = await initiatePayment({
         orderId: order.id,
         currency: 'XAF',
@@ -112,6 +121,7 @@ export function CheckoutPageClient() {
         err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.',
       );
       setIsSubmitting(false);
+      setIsCompletingOrder(false); // Réactive la redirection si erreur
     }
   };
 
@@ -144,18 +154,18 @@ export function CheckoutPageClient() {
             </label>
             <input
               type="text"
-              name="buyerName"
-              value={form.buyerName}
+              name="customerName"
+              value={form.customerName}
               onChange={handleChange}
               placeholder="Ex : Jean Dupont"
               className={`w-full rounded-lg border px-4 py-2.5 text-sm text-white bg-zinc-800 placeholder-zinc-500 outline-none transition-colors ${
-                errors.buyerName
+                errors.customerName
                   ? 'border-red-500 focus:border-red-400'
                   : 'border-zinc-700 focus:border-orange-500'
               }`}
             />
-            {errors.buyerName && (
-              <p className="mt-1 text-xs text-red-400">{errors.buyerName}</p>
+            {errors.customerName && (
+              <p className="mt-1 text-xs text-red-400">{errors.customerName}</p>
             )}
           </div>
 
@@ -166,18 +176,18 @@ export function CheckoutPageClient() {
             </label>
             <input
               type="email"
-              name="buyerEmail"
-              value={form.buyerEmail}
+              name="customerEmail"
+              value={form.customerEmail}
               onChange={handleChange}
               placeholder="vous@exemple.cm"
               className={`w-full rounded-lg border px-4 py-2.5 text-sm text-white bg-zinc-800 placeholder-zinc-500 outline-none transition-colors ${
-                errors.buyerEmail
+                errors.customerEmail
                   ? 'border-red-500 focus:border-red-400'
                   : 'border-zinc-700 focus:border-orange-500'
               }`}
             />
-            {errors.buyerEmail && (
-              <p className="mt-1 text-xs text-red-400">{errors.buyerEmail}</p>
+            {errors.customerEmail && (
+              <p className="mt-1 text-xs text-red-400">{errors.customerEmail}</p>
             )}
             <p className="mt-1 text-xs text-zinc-500">
               Vos tokens de téléchargement seront envoyés à cet email.
@@ -191,18 +201,18 @@ export function CheckoutPageClient() {
             </label>
             <input
               type="tel"
-              name="buyerPhone"
-              value={form.buyerPhone}
+              name="customerPhone"
+              value={form.customerPhone}
               onChange={handleChange}
               placeholder="Ex : 655 00 00 00"
               className={`w-full rounded-lg border px-4 py-2.5 text-sm text-white bg-zinc-800 placeholder-zinc-500 outline-none transition-colors ${
-                errors.buyerPhone
+                errors.customerPhone
                   ? 'border-red-500 focus:border-red-400'
                   : 'border-zinc-700 focus:border-orange-500'
               }`}
             />
-            {errors.buyerPhone && (
-              <p className="mt-1 text-xs text-red-400">{errors.buyerPhone}</p>
+            {errors.customerPhone && (
+              <p className="mt-1 text-xs text-red-400">{errors.customerPhone}</p>
             )}
             <p className="mt-1 text-xs text-zinc-500">
               Orange Money ou MTN Mobile Money acceptés.
@@ -225,12 +235,12 @@ export function CheckoutPageClient() {
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Redirection vers CinetPay…
+                {total === 0 ? 'Préparation du téléchargement…' : 'Redirection vers CinetPay…'}
               </>
             ) : (
               <>
                 <ShieldCheck className="h-4 w-4" />
-                Payer {formatFcfa(total)} — Mobile Money
+                {total === 0 ? `Télécharger maintenant` : `Payer {formatFcfa(total)} — Mobile Money`}
               </>
             )}
           </button>

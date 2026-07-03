@@ -111,14 +111,11 @@ export class FileStorageService implements OnModuleInit {
     responseHeaders?: Record<string, string>,
   ): Promise<string> {
     // Signé directement pour l'hôte public => URL valide et joignable par le navigateur.
-    const respHeaders = responseHeaders ?? {};
-    const requestDate = new Date();
     return await this.minioPublicClient.presignedGetObject(
       this.bucketName,
       objectKey,
       expiresInSeconds,
-      respHeaders,
-      requestDate,
+      responseHeaders,
     );
   }
 

@@ -215,13 +215,23 @@ export function ProductPageClient({ product }: Props) {
 
           {/* Boutons CTA */}
           <div className="flex flex-col gap-3 sm:flex-row animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <button
-              onClick={handleBuyNow}
-              className="flex flex-1 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-600 active:scale-95"
-            >
-              <Zap className="h-4 w-4" />
-              Acheter maintenant
-            </button>
+            {product.price === 0 ? (
+              <button
+                onClick={handleBuyNow}
+                className="flex flex-1 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-600 active:scale-95"
+              >
+                <Download className="h-4 w-4" />
+                Télécharger maintenant
+              </button>
+            ) : (
+              <button
+                onClick={handleBuyNow}
+                className="flex flex-1 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-600 active:scale-95"
+              >
+                <Zap className="h-4 w-4" />
+                Acheter maintenant
+              </button>
+            )}
             <button
               onClick={handleAddToCart}
               className={`flex flex-1 w-full sm:w-auto items-center justify-center gap-2 rounded-lg border px-6 py-3 font-semibold transition-all ${

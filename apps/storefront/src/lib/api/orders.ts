@@ -1,13 +1,15 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export interface CreateOrderPayload {
-  buyerName: string;
-  buyerEmail: string;
-  buyerPhone: string;
-  items: Array<{ productId: string; priceAtPurchase: number }>;
-  totalAmount: number;
-  currency: 'XAF';
-  utmSource?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  items: Array<{ productId: string; quantity: number }>;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  referrer_url?: string;
 }
 
 export interface OrderCreatedResponse {

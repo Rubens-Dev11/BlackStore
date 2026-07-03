@@ -15,6 +15,7 @@ interface OrderItem {
   product: {
     name: string;
     slug: string;
+    filePath?: string;
   };
   downloadTokens: DownloadToken[];
 }
@@ -143,6 +144,7 @@ export function OrderSuccessClient() {
                   <div key={tokenIndex} className="border border-gray-600 rounded p-4">
                     <a
                       href={`${process.env.NEXT_PUBLIC_API_URL}/downloads/${token.token}`}
+                      download={(item.product.filePath ?? '').split('/').pop() || 'download'}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded mb-2"

@@ -27,13 +27,8 @@ export const useCartStore = create<CartStore>()(
         set((state) => {
           const existing = state.items.find((i) => i.productId === item.productId);
           if (existing) {
-            return {
-              items: state.items.map((i) =>
-                i.productId === item.productId
-                  ? { ...i, quantity: i.quantity + 1 }
-                  : i,
-              ),
-            };
+            // Already in cart; do nothing (quantity stays 1)
+            return state;
           }
           return { items: [...state.items, { ...item, quantity: 1 }] };
         }),
