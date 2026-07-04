@@ -80,7 +80,7 @@ export class OrdersService {
     this.logger.log(`Commande créée : ${order.id} — ${orderNumber}`);
     // Send purchase emails for free orders (download + confirmation)
     if (totalAmount === 0) {
-      await this.sendPurchaseEmails(order.id);
+      this.sendPurchaseEmails(order.id).catch((err) => this.logger.error(`sendPurchaseEmails a échoué pour la commande ${order.id}`, err));
     }
     return this.findOne(order.id);
   }
