@@ -7,7 +7,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-       '@/lib/format' : path.resolve(__dirname, './packages/shared/src/index.ts'),
     },
   },
   server: {

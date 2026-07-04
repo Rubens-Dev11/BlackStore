@@ -274,7 +274,7 @@ export function ProductFormPage() {
       if (name === 'isFree') {
         setForm((prev) => ({
           ...prev,
-          price: e.target.checked ? '0' : prev.price,
+          price: (e.target as HTMLInputElement).checked ? '0' : prev.price,
         }));
       }
     } else {
@@ -462,7 +462,7 @@ export function ProductFormPage() {
                       setForm((prev) => ({
                         ...prev,
                         isFree: e.target.checked,
-                        price: e.target.checked ? '0' : prev.price,
+                        price: (e.target as HTMLInputElement).checked ? '0' : prev.price,
                       }));
                     }}
                     className="h-4 w-4 text-primary"

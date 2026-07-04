@@ -1,41 +1,108 @@
-# ─────────────────────────────────────────────────────────────────────
-# BlackStore — Docker Compose Production Override
-# ─────────────────────────────────────────────────────────────────────
-# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
-#
-# Ce fichier surcharge docker-compose.yml pour la production :
-# - Supprime les volumes de développement (hot-reload)
-# - Utilise des builds multi-stage optimisés
-# - Configure NODE_ENV=production
-# - Désactive Swagger, MailHog, MinIO Console
-# - Active les health checks stricts
-# ─────────────────────────────────────────────────────────────────────
+networks:
+  blackstore-network:
+    driver: bridge
 
-version: '3.9'
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  files-storage:
 
 services:
-
   nestjs-api:
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - files-storage:/app/storage
-    # TODO: Override build avec multi-stage Dockerfile.prod
-    # TODO: Configurer les secrets via Docker Secrets ou Vault
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.prod
+    container_name: blackstore-api
+    ports:
+      - "127.0.0.1:3010:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks: [blackstore-network]
+    restart: unless-stopped
 
   nextjs-storefront:
+    build:
+      context: ./apps/storefront
+      dockerfile: Dockerfile.prod
+    container_name: blackstore-storefront
+    ports:
+      - "127.0.0.1:3001:3001"
     environment:
-      - NODE_ENV=production
-    volumes: []
-    # TODO: Override build pour le mode production (next build + next start)
+      - API_URL=http://nestjs-api:3000
+      - PORT=3001
+    env_file:
+      - .env.production
+    depends_on:
+      - nestjs-api
+    networks: [blackstore-network]
+    restart: unless-stopped
 
   react-admin:
-    environment:
-      - NODE_ENV=production
-    volumes: []
-    # TODO: Build statique (vite build) servi par nginx
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: blackstore-admin
+    ports:
+      - "127.0.0.1:3002:3002"
+    depends_on:
+      - nestjs-api
+    networks: [blackstore-network]
+    restart: unless-stopped
 
-  # TODO: Remplacer MailHog par un vrai service SMTP (SES, SendGrid, etc.)
-  # TODO: Remplacer MinIO par S3 ou Cloudflare R2
-  # TODO: Ajouter un reverse proxy (Traefik ou nginx)
-  # TODO: Ajouter les certificats SSL/TLS
+  postgres:
+    image: postgres:16-alpine
+    container_name: blackstore-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blackstore}
+      POSTGRES_USER: ${POSTGRES_USER:-blackstore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blackstore} -d ${POSTGRES_DB:-blackstore}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [blackstore-network]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: blackstore-redis
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [blackstore-network]
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: blackstore-minio
+    ports:
+      - "127.0.0.1:9010:9000"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks: [blackstore-network]
+    restart: unless-stopped

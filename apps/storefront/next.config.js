@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     // En dev, l'optimiseur next/image tourne dans le conteneur et ne peut pas
     // joindre localhost:9000 (= le conteneur lui-même). On désactive donc
@@ -9,6 +10,7 @@ const nextConfig = {
     remotePatterns: [
       // MinIO (dev). En prod, ajouter le domaine public du stockage.
       { protocol: 'http', hostname: 'localhost', port: '9000', pathname: '/**' },
+      { protocol: 'https', hostname: 'api.blackstore.pymail.cm', pathname: '/**' },
     ],
   },
 };
