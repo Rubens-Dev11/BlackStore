@@ -6,12 +6,37 @@ import { ConfigService } from '@nestjs/config';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly transporter: nodemailer.Transporter;
+  private readonly fromAddress: string;
 
   constructor(private readonly configService: ConfigService) {
+    const host = this.configService.get<string>('SMTP_HOST', 'localhost');
+    const port = this.configService.get<number>('SMTP_PORT', 1025);
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+    const hasAuth = Boolean(user && pass);
+
+    this.fromAddress = this.configService.get<string>(
+      'SMTP_FROM',
+      'BlackStore <noreply@blackstore.cm>',
+    );
+
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('SMTP_HOST', 'localhost'),
-      port: this.configService.get<number>('SMTP_PORT', 1026),
+      host,
+      port,
       secure: false,
+      // MailHog (dev) n'a pas de TLS ; le vrai serveur SMTP (prod) l'exige.
+      requireTLS: hasAuth,
+      ...(hasAuth
+        ? {
+            auth: { user, pass },
+            tls: {
+              servername: this.configService.get<string>(
+                'SMTP_TLS_SERVERNAME',
+                'mail.pymail.cm',
+              ),
+            },
+          }
+        : {}),
     });
   }
 
@@ -42,7 +67,7 @@ export class EmailService {
       `;
 
       await this.transporter.sendMail({
-        from: 'BlackStore <noreply@blackstore.cm>',
+        from: this.fromAddress,
         to,
         subject: 'Vos liens de téléchargement - BlackStore',
         html,
@@ -84,7 +109,7 @@ export class EmailService {
       `).join('');
 
       await this.transporter.sendMail({
-        from: '"BlackStore" <noreply@blackstore.cm>',
+        from: this.fromAddress,
         to: data.buyerEmail,
         subject: `✅ Commande ${data.orderNumber} confirmée — BlackStore`,
         html: `
