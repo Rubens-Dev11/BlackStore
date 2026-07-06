@@ -146,4 +146,28 @@ export class ProductsController {
   async uploadScreenshots(@Param('id') id: string, @UploadedFiles() files: Express.Multer.File[]) {
     return this.productsService.uploadScreenshots(id, files);
   }
+
+  @Post(':id/upload-cover')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload de l\'image de couverture' })
+  @ApiResponse({ status: 200, description: 'Image de couverture uploadée' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  @ApiResponse({ status: 404, description: 'Produit introuvable' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCover(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.productsService.uploadCoverImage(id, file);
+  }
 }

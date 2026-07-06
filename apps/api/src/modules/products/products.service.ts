@@ -315,6 +315,21 @@ export class ProductsService {
     });
   }
 
+  async uploadCoverImage(id: string, file: Express.Multer.File) {
+    await this.findById(id);
+
+    const objectKey = await this.fileStorageService.uploadCoverImage(
+      file.buffer,
+      id,
+      file.mimetype,
+    );
+
+    return await this.prisma.product.update({
+      where: { id },
+      data: { coverImageUrl: objectKey },
+    });
+  }
+
   private async generateUniqueSlug(name: string): Promise<string> {
     let slug = name
       .toLowerCase()

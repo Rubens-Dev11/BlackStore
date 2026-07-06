@@ -105,6 +105,26 @@ export class FileStorageService implements OnModuleInit {
     return objectKey;
   }
 
+  async uploadCoverImage(
+    buffer: Buffer,
+    productId: string,
+    mimeType: string,
+  ): Promise<string> {
+    const ext = (mimeType.split('/')[1] || 'jpg').split('+')[0];
+    const objectKey = `covers/${productId}/${randomUUID()}.${ext}`;
+
+    await this.minioClient.putObject(
+      this.bucketName,
+      objectKey,
+      buffer,
+      buffer.length,
+      { 'Content-Type': mimeType },
+    );
+
+    this.logger.log(`Image de couverture uploadée : ${objectKey}`);
+    return objectKey;
+  }
+
   async getPresignedUrl(
     objectKey: string,
     expiresInSeconds: number,
