@@ -194,6 +194,11 @@ export function ProductFormPage() {
   const [uploadedCoverKey, setUploadedCoverKey] = useState<string | null>(null);
   const [uploadedScreenshots, setUploadedScreenshots] = useState<string[]>([]);
 
+  // Progression réelle de chaque upload (0-100), null = pas d'upload en cours
+  const [fileProgress, setFileProgress] = useState<number | null>(null);
+  const [coverProgress, setCoverProgress] = useState<number | null>(null);
+  const [screenshotsProgress, setScreenshotsProgress] = useState<number | null>(null);
+
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.get<Product>(`/products/by-id/${id}`, accessToken),
@@ -246,7 +251,8 @@ export function ProductFormPage() {
       const loaderId = notify.loading('Upload en cours...');
       const formData = new FormData();
       formData.append('file', file);
-      return api.postForm<Product>(`/products/${productId}/upload`, formData, accessToken)
+      setFileProgress(0);
+      return api.postFormWithProgress<Product>(`/products/${productId}/upload`, formData, accessToken, setFileProgress)
         .then((res) => {
           notify.success('Fichier uploadé ✓', { id: loaderId });
           return res;
@@ -254,7 +260,8 @@ export function ProductFormPage() {
         .catch((err) => {
           notify.error('Erreur upload fichier', { id: loaderId });
           throw err;
-        });
+        })
+        .finally(() => setFileProgress(null));
     },
     onSuccess: (updated) => {
       setUploadedFilePath(updated.filePath);
@@ -263,10 +270,12 @@ export function ProductFormPage() {
   });
 
   const uploadScreenshotsMutation = useMutation({
-    mutationFn: ({ productId, files }: { productId: string; files: FileList }) => {
+    mutationFn: ({ productId, files }: { productId: string; files: File[] }) => {
       const formData = new FormData();
-      Array.from(files).forEach((file) => formData.append('files', file));
-      return api.postForm<Product>(`/products/${productId}/upload-screenshots`, formData, accessToken);
+      files.forEach((file) => formData.append('files', file));
+      setScreenshotsProgress(0);
+      return api.postFormWithProgress<Product>(`/products/${productId}/upload-screenshots`, formData, accessToken, setScreenshotsProgress)
+        .finally(() => setScreenshotsProgress(null));
     },
     onSuccess: (updated) => {
       notify.success('Captures uploadées');
@@ -283,7 +292,8 @@ export function ProductFormPage() {
       const loaderId = notify.loading('Upload de la couverture...');
       const formData = new FormData();
       formData.append('file', file);
-      return api.postForm<Product>(`/products/${productId}/upload-cover`, formData, accessToken)
+      setCoverProgress(0);
+      return api.postFormWithProgress<Product>(`/products/${productId}/upload-cover`, formData, accessToken, setCoverProgress)
         .then((res) => {
           notify.success('Couverture uploadée ✓', { id: loaderId });
           return res;
@@ -291,7 +301,8 @@ export function ProductFormPage() {
         .catch((err) => {
           notify.error('Erreur upload couverture', { id: loaderId });
           throw err;
-        });
+        })
+        .finally(() => setCoverProgress(null));
     },
     onSuccess: (updated) => {
       setUploadedCoverKey(updated.coverImageUrl);
@@ -782,6 +793,17 @@ export function ProductFormPage() {
               disabled={uploadCoverMutation.isPending || isAutoCreating}
               className="block w-full text-sm"
             />
+            {coverProgress !== null && (
+              <div className="mt-2">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-150"
+                    style={{ width: `${coverProgress}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{coverProgress}%</p>
+              </div>
+            )}
             <p className="mt-1 text-xs text-muted-foreground">
               À défaut, la 1ère capture d'écran sera utilisée comme couverture.
             </p>
@@ -812,6 +834,17 @@ export function ProductFormPage() {
               disabled={uploadFileMutation.isPending || isAutoCreating}
               className="block w-full text-sm"
             />
+            {fileProgress !== null && (
+              <div className="mt-2">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-150"
+                    style={{ width: `${fileProgress}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{fileProgress}%</p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -823,9 +856,14 @@ export function ProductFormPage() {
               onChange={async (e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
+                // Instantané immédiat : évite de dépendre de la FileList vivante
+                // de l'input, qui se vide dès qu'on fait e.target.value = ''
+                // plus bas (et l'upload étant async, ce reset peut survenir
+                // avant que la requête n'ait lu les fichiers).
+                const filesSnapshot = Array.from(files);
                 try {
                   const productId = await ensureProductId();
-                  uploadScreenshotsMutation.mutate({ productId, files });
+                  uploadScreenshotsMutation.mutate({ productId, files: filesSnapshot });
                 } catch (err) {
                   notify.error(err instanceof Error ? err.message : "Impossible de préparer l'upload.");
                 }
@@ -834,6 +872,17 @@ export function ProductFormPage() {
               disabled={uploadScreenshotsMutation.isPending || isAutoCreating}
               className="block w-full text-sm"
             />
+            {screenshotsProgress !== null && (
+              <div className="mt-2">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-150"
+                    style={{ width: `${screenshotsProgress}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{screenshotsProgress}%</p>
+              </div>
+            )}
             {displayScreenshots.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {displayScreenshots.map((url) => (

@@ -103,7 +103,65 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
   }
 }
 
+// Upload avec suivi de progression réel (XMLHttpRequest, car fetch() ne
+// permet pas d'observer la progression de l'UPLOAD, seulement de la
+// réception). Version simplifiée par rapport à fetchWithRefresh : en cas de
+// 401 pendant un upload, on ne tente pas de rafraîchir le token et de
+// rejouer automatiquement — on demande de recharger la page. Ça évite de
+// dupliquer la logique de file d'attente de refresh sur un chemin critique
+// (upload de fichiers volumineux) pour un cas rare (token expiré pile
+// pendant un upload).
+function postFormWithProgress<T>(
+  path: string,
+  body: FormData,
+  accessToken: string | null | undefined,
+  onProgress: (percent: number) => void,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${BASE_URL}${path}`);
+    if (accessToken) {
+      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject({ status: xhr.status, message: 'Réponse invalide du serveur' });
+        }
+        return;
+      }
+
+      let message = xhr.status === 401
+        ? 'Session expirée, merci de recharger la page et réessayer.'
+        : 'Erreur serveur';
+      try {
+        const parsed = JSON.parse(xhr.responseText);
+        message = parsed.message || message;
+      } catch {
+        // réponse non-JSON, on garde le message par défaut
+      }
+      reject({ status: xhr.status, message });
+    };
+
+    xhr.onerror = () => {
+      reject({ status: 0, message: "Erreur réseau pendant l'upload" });
+    };
+
+    xhr.send(body);
+  });
+}
+
 export const api = {
+  postFormWithProgress,
   get: <T>(path: string, accessToken?: string | null) =>
     fetchWithRefresh(`${BASE_URL}${path}`, { method: 'GET', headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' } })
       .then((res) => res.json()) as Promise<T>,
@@ -139,3 +197,4 @@ export const api = {
     return res.blob();
   },
 };
+
