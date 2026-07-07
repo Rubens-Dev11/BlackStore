@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/use-auth-store';
@@ -179,6 +179,21 @@ export function ProductFormPage() {
   const [form, setForm] = useState<ProductFormData>(EMPTY_FORM);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // ── Création silencieuse en arrière-plan (mode création uniquement) ──
+  // autoCreatedIdRef : lecture synchrone (évite les races entre 2 uploads
+  // déclenchés coup sur coup, avant que le state React n'ait re-render).
+  // autoCreatedId (state) : sert uniquement à mettre à jour l'affichage.
+  const autoCreatedIdRef = useRef<string | null>(null);
+  const creatingPromiseRef = useRef<Promise<string> | null>(null);
+  const [autoCreatedId, setAutoCreatedId] = useState<string | null>(null);
+  const [isAutoCreating, setIsAutoCreating] = useState(false);
+
+  // Echo local des uploads en mode création (pas de query `product` tant
+  // que le formulaire n'est pas en édition réelle).
+  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null);
+  const [uploadedCoverKey, setUploadedCoverKey] = useState<string | null>(null);
+  const [uploadedScreenshots, setUploadedScreenshots] = useState<string[]>([]);
+
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.get<Product>(`/products/by-id/${id}`, accessToken),
@@ -213,8 +228,8 @@ export function ProductFormPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: ReturnType<typeof formToUpdatePayload>) =>
-      api.patch<Product>(`/products/${id}`, payload, accessToken),
+    mutationFn: ({ id: targetId, payload }: { id: string; payload: ReturnType<typeof formToUpdatePayload> }) =>
+      api.patch<Product>(`/products/${targetId}`, payload, accessToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', id] });
@@ -227,11 +242,11 @@ export function ProductFormPage() {
   });
 
   const uploadFileMutation = useMutation({
-    mutationFn: (file: File) => {
+    mutationFn: ({ productId, file }: { productId: string; file: File }) => {
       const loaderId = notify.loading('Upload en cours...');
       const formData = new FormData();
       formData.append('file', file);
-      return api.postForm<Product>(`/products/${id}/upload`, formData, accessToken)
+      return api.postForm<Product>(`/products/${productId}/upload`, formData, accessToken)
         .then((res) => {
           notify.success('Fichier uploadé ✓', { id: loaderId });
           return res;
@@ -241,27 +256,87 @@ export function ProductFormPage() {
           throw err;
         });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product', id] });
+    onSuccess: (updated) => {
+      setUploadedFilePath(updated.filePath);
+      queryClient.invalidateQueries({ queryKey: ['product', updated.id] });
     },
   });
 
   const uploadScreenshotsMutation = useMutation({
-    mutationFn: (files: FileList) => {
+    mutationFn: ({ productId, files }: { productId: string; files: FileList }) => {
       const formData = new FormData();
       Array.from(files).forEach((file) => formData.append('files', file));
-      return api.postForm<Product>(`/products/${id}/upload-screenshots`, formData, accessToken);
+      return api.postForm<Product>(`/products/${productId}/upload-screenshots`, formData, accessToken);
     },
-    onSuccess: () => {
+    onSuccess: (updated) => {
       notify.success('Captures uploadées');
-      queryClient.invalidateQueries({ queryKey: ['product', id] });
+      setUploadedScreenshots(updated.screenshots ?? []);
+      queryClient.invalidateQueries({ queryKey: ['product', updated.id] });
     },
     onError: () => {
       notify.error('Erreur upload captures');
     },
   });
 
+  const uploadCoverMutation = useMutation({
+    mutationFn: ({ productId, file }: { productId: string; file: File }) => {
+      const loaderId = notify.loading('Upload de la couverture...');
+      const formData = new FormData();
+      formData.append('file', file);
+      return api.postForm<Product>(`/products/${productId}/upload-cover`, formData, accessToken)
+        .then((res) => {
+          notify.success('Couverture uploadée ✓', { id: loaderId });
+          return res;
+        })
+        .catch((err) => {
+          notify.error('Erreur upload couverture', { id: loaderId });
+          throw err;
+        });
+    },
+    onSuccess: (updated) => {
+      setUploadedCoverKey(updated.coverImageUrl);
+      queryClient.invalidateQueries({ queryKey: ['product', updated.id] });
+    },
+  });
+
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // ── Assure qu'un produit existe en base avant tout upload. ──
+  // En édition : renvoie directement l'id existant.
+  // En création : crée un brouillon silencieux au 1er appel (dédoublonné
+  // via une promesse partagée pour éviter 2 créations si plusieurs champs
+  // fichier sont remplis coup sur coup), les appels suivants réutilisent
+  // le même id sans re-créer.
+  async function ensureProductId(): Promise<string> {
+    if (id) return id;
+    if (autoCreatedIdRef.current) return autoCreatedIdRef.current;
+    if (creatingPromiseRef.current) return creatingPromiseRef.current;
+
+    const priceValue = parseInt(form.price, 10);
+    if (form.name.trim().length < 3 || !form.categoryId || form.price === '' || isNaN(priceValue)) {
+      throw new Error(
+        "Renseigne au moins le nom (3 caractères min.), la catégorie et le prix avant d'ajouter un fichier."
+      );
+    }
+
+    setIsAutoCreating(true);
+    const payload = formToCreatePayload(form);
+    const promise = api.post<Product>('/products', payload, accessToken)
+      .then((created) => {
+        autoCreatedIdRef.current = created.id;
+        setAutoCreatedId(created.id);
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        notify.success('Brouillon créé — les fichiers sont associés à ce produit.');
+        return created.id;
+      })
+      .finally(() => {
+        creatingPromiseRef.current = null;
+        setIsAutoCreating(false);
+      });
+
+    creatingPromiseRef.current = promise;
+    return promise;
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -295,8 +370,9 @@ export function ProductFormPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    const payload = isEditing ? formToUpdatePayload(form) : formToCreatePayload(form);
-    
+    const targetId = id ?? autoCreatedIdRef.current;
+    const payload = targetId ? formToUpdatePayload(form) : formToCreatePayload(form);
+
     // Validation Zod
     const result = productSchema.safeParse({
       ...payload,
@@ -309,8 +385,8 @@ export function ProductFormPage() {
       return;
     }
 
-    if (isEditing) {
-      updateMutation.mutate(payload as ReturnType<typeof formToUpdatePayload>);
+    if (targetId) {
+      updateMutation.mutate({ id: targetId, payload: payload as ReturnType<typeof formToUpdatePayload> });
     } else {
       createMutation.mutate(payload as ReturnType<typeof formToCreatePayload>);
     }
@@ -325,6 +401,12 @@ export function ProductFormPage() {
   }
 
   const categories = categoriesData ?? [];
+
+  const displayFilePath = product?.filePath ?? uploadedFilePath;
+  const displayCoverKey = product?.coverImageUrl ?? uploadedCoverKey;
+  const displayScreenshots = (product?.screenshots && product.screenshots.length > 0)
+    ? product.screenshots
+    : uploadedScreenshots;
 
   // ─────────────────────────────────────────────
   // Rendu
@@ -349,7 +431,7 @@ export function ProductFormPage() {
         </div>
       )}
 
-      
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ── Section Informations générales ── */}
         <fieldset className="rounded-lg border p-4">
@@ -494,17 +576,9 @@ export function ProductFormPage() {
         <fieldset className="rounded-lg border p-4">
           <legend className="mb-3 px-2 text-sm font-semibold">Médias</legend>
 
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium">URL image de couverture</label>
-            <input
-              name="coverImageUrl"
-              type="url"
-              value={form.coverImageUrl}
-              onChange={handleChange}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-              placeholder="https://..."
-            />
-          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            L'image de couverture se gère désormais via un bouton d'upload, dans la section « Upload fichiers » plus bas.
+          </p>
 
           <div className="mb-4">
             <label className="mb-1 block text-sm font-medium">URL vidéo démo</label>
@@ -668,56 +742,107 @@ export function ProductFormPage() {
           </div>
         </fieldset>
 
-        {/* ── Section Upload (édition uniquement) ── */}
-        {isEditing && id && (
-          <fieldset className="rounded-lg border p-4">
-            <legend className="mb-3 px-2 text-sm font-semibold">Upload fichiers</legend>
+        {/* ── Section Upload (création ET édition) ── */}
+        <fieldset className="rounded-lg border p-4">
+          <legend className="mb-3 px-2 text-sm font-semibold">Upload fichiers</legend>
 
-            
-            {product && product.filePath && (
-              <p className="mb-3 text-xs text-muted-foreground">
-                Fichier actuel : <code>{product.filePath}</code>
+          {!isEditing && !autoCreatedId && (
+            <p className="mb-4 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              Renseigne le nom, la catégorie et le prix ci-dessus pour activer l'upload. Le produit
+              sera enregistré en brouillon (invisible sur le storefront) dès le premier fichier ajouté.
+            </p>
+          )}
+
+          {isAutoCreating && (
+            <p className="mb-4 text-xs text-muted-foreground">Préparation du brouillon…</p>
+          )}
+
+          {/* Image de couverture */}
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-medium">Image de couverture</label>
+            {displayCoverKey && (
+              <p className="mb-1 text-xs text-muted-foreground">
+                Couverture actuelle : <code>{displayCoverKey}</code>
               </p>
             )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const productId = await ensureProductId();
+                  uploadCoverMutation.mutate({ productId, file });
+                } catch (err) {
+                  notify.error(err instanceof Error ? err.message : "Impossible de préparer l'upload.");
+                }
+                e.target.value = '';
+              }}
+              disabled={uploadCoverMutation.isPending || isAutoCreating}
+              className="block w-full text-sm"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              À défaut, la 1ère capture d'écran sera utilisée comme couverture.
+            </p>
+          </div>
 
-            <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Fichier produit (APK, ZIP…)</label>
-              <input
-                type="file"
-                accept=".apk,.exe,.zip,.dmg"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadFileMutation.mutate(file);
-                }}
-                disabled={uploadFileMutation.isPending}
-                className="block w-full text-sm"
-              />
-            </div>
+          {displayFilePath && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              Fichier actuel : <code>{displayFilePath}</code>
+            </p>
+          )}
 
-            <div>
-              <label className="mb-1 block text-sm font-medium">Captures d'écran (max 8)</label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    uploadScreenshotsMutation.mutate(e.target.files);
-                  }
-                }}
-                disabled={uploadScreenshotsMutation.isPending}
-                className="block w-full text-sm"
-              />
-              {product && product.screenshots && product.screenshots.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {product.screenshots.map((url) => (
-                    <span key={url} className="rounded bg-muted px-2 py-1 text-xs">{url}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </fieldset>
-        )}
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-medium">Fichier produit (APK, ZIP…)</label>
+            <input
+              type="file"
+              accept=".apk,.exe,.zip,.dmg"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const productId = await ensureProductId();
+                  uploadFileMutation.mutate({ productId, file });
+                } catch (err) {
+                  notify.error(err instanceof Error ? err.message : "Impossible de préparer l'upload.");
+                }
+                e.target.value = '';
+              }}
+              disabled={uploadFileMutation.isPending || isAutoCreating}
+              className="block w-full text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Captures d'écran (max 8)</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                try {
+                  const productId = await ensureProductId();
+                  uploadScreenshotsMutation.mutate({ productId, files });
+                } catch (err) {
+                  notify.error(err instanceof Error ? err.message : "Impossible de préparer l'upload.");
+                }
+                e.target.value = '';
+              }}
+              disabled={uploadScreenshotsMutation.isPending || isAutoCreating}
+              className="block w-full text-sm"
+            />
+            {displayScreenshots.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {displayScreenshots.map((url) => (
+                  <span key={url} className="rounded bg-muted px-2 py-1 text-xs">{url}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </fieldset>
 
         {/* ── Section Visibilité ── */}
         <fieldset className="rounded-lg border p-4">
@@ -757,12 +882,14 @@ export function ProductFormPage() {
           </button>
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isAutoCreating}
             className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {isPending
               ? 'Enregistrement...'
-              : isEditing
+              : isAutoCreating
+              ? 'Préparation...'
+              : (isEditing || autoCreatedId)
               ? 'Enregistrer les modifications'
               : 'Créer le produit'}
           </button>
@@ -771,3 +898,4 @@ export function ProductFormPage() {
     </div>
   );
 }
+
