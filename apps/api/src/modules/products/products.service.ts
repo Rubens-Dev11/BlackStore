@@ -54,6 +54,7 @@ export class ProductsService {
         where,
         skip: (page - 1) * limit,
         take: limit,
+        orderBy: { createdAt: 'desc' },
         select: {
           id: true,
           name: true,

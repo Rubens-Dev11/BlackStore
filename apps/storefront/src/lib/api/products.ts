@@ -45,9 +45,10 @@ export async function fetchProducts(params?: {
   categoryId?: string;
   search?: string;
 }): Promise<{ data: ProductSummary[]; total: number; page: number; limit: number }> {
-  // L'API n'accepte AUCUN query param sur GET /products (400 sinon)
-  // Le filtrage se fait côté client après récupération de tous les produits
-  const res = await fetch(`${getBaseUrl()}/products`, { cache: 'no-store' });
+  // L'API supporte page/limit/categoryId/featured en query params (voir ProductQueryDto).
+  // On demande la limite max (100) pour récupérer tout le catalogue actif en un seul appel.
+  // Le filtrage catégorie/recherche reste côté client (le backend ne fait pas de recherche texte).
+  const res = await fetch(`${getBaseUrl()}/products?limit=100`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Erreur chargement produits');
 
   const result: { data: ProductSummary[]; total: number; page: number; limit: number } =

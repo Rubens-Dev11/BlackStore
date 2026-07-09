@@ -9,7 +9,7 @@ export class ProductQueryDto {
   @IsNumber()
   @IsOptional()
   @Min(1)
-  @Max(50)
+  @Max(100)
   limit?: number = 12;
 
   @IsUUID()
