@@ -62,7 +62,7 @@ model Product {
   fileHash            String?     @db.VarChar(64)   @map("file_hash")
   maxDownloads        Int         @default(3)        @map("max_downloads")
   downloadExpiryHours Int         @default(72)       @map("download_expiry_hours")
-  downloadCount       Int         @default(0)        @map("download_count")
+  downloadCount       Int         @default(0)        @map("download_count") // Inutilisé : le nombre affiché est calculé depuis les commandes payées (ProductsService)
   viewCount           Int         @default(0)        @map("view_count")
   ratingAvg           Decimal     @default(0) @db.Decimal(3, 2) @map("rating_avg")
   ratingCount         Int         @default(0)        @map("rating_count")

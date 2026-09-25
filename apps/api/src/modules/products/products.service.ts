@@ -4,7 +4,7 @@ import { FileStorageService } from '../file-storage/file-storage.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
-import { Platform } from '@prisma/client';
+import { Platform, Prisma } from '@prisma/client';
 import 'multer';
 
 @Injectable()
@@ -18,6 +18,22 @@ export class ProductsService {
 
   // Durée de validité des URLs presigned (7 jours = max autorisé par MinIO/S3).
   private static readonly PRESIGN_TTL = 7 * 24 * 3600;
+
+  // Nombre de téléchargements affiché = commandes payées (gratuites comprises)
+  // contenant le produit, compté à la lecture. La colonne download_count n'est
+  // jamais incrémentée, et les liens envoyés par e-mail pointent directement
+  // vers MinIO sans passer par l'API : seules les commandes sont fiables.
+  private static readonly PAID_ORDERS_COUNT = {
+    select: { orderItems: { where: { order: { status: 'paid' } } } },
+  } satisfies Prisma.ProductCountOutputTypeDefaultArgs;
+
+  /** Expose le comptage sous le champ downloadCount lu par la boutique et l'admin. */
+  private withDownloadCount<T extends { _count: { orderItems: number } }>({
+    _count,
+    ...product
+  }: T): Omit<T, '_count'> & { downloadCount: number } {
+    return { ...product, downloadCount: _count.orderItems };
+  }
 
   /**
    * Transforme les objectKeys MinIO d'un produit en URLs presigned joignables
@@ -69,7 +85,7 @@ export class ProductsService {
           originalPrice: true,
           platform: true,
           isFeatured: true,
-          downloadCount: true,
+          _count: ProductsService.PAID_ORDERS_COUNT,
           ratingAvg: true,
           ratingCount: true,
           viewCount: true,
@@ -83,7 +99,7 @@ export class ProductsService {
     ]);
 
     return {
-      data: await Promise.all(data.map((p) => this.withImageUrls(p))),
+      data: await Promise.all(data.map((p) => this.withImageUrls(this.withDownloadCount(p)))),
       total,
       page,
       limit,
@@ -94,10 +110,11 @@ export class ProductsService {
   async findAllAdmin() {
     const data = await this.prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
+      include: { _count: ProductsService.PAID_ORDERS_COUNT },
     });
 
     return {
-      data: await Promise.all(data.map((p) => this.withImageUrls(p))),
+      data: await Promise.all(data.map((p) => this.withImageUrls(this.withDownloadCount(p)))),
       total: data.length,
       page: 1,
       limit: data.length,
@@ -121,7 +138,7 @@ export class ProductsService {
         originalPrice: true,
         platform: true,
         isFeatured: true,
-        downloadCount: true,
+        _count: ProductsService.PAID_ORDERS_COUNT,
         ratingAvg: true,
         ratingCount: true,
         viewCount: true,
@@ -132,7 +149,7 @@ export class ProductsService {
       },
     });
 
-    return await Promise.all(data.map((p) => this.withImageUrls(p)));
+    return await Promise.all(data.map((p) => this.withImageUrls(this.withDownloadCount(p))));
   }
 
   async search(q: string) {
@@ -189,7 +206,7 @@ export class ProductsService {
         viewCount: true,
         ratingAvg: true,
         ratingCount: true,
-        downloadCount: true,
+        _count: ProductsService.PAID_ORDERS_COUNT,
         isActive: true,
         isFeatured: true,
         seoTitle: true,
@@ -210,7 +227,7 @@ export class ProductsService {
       data: { viewCount: product.viewCount + 1 },
     });
 
-    return await this.withImageUrls(product);
+    return await this.withImageUrls(this.withDownloadCount(product));
   }
 
   async findById(id: string) {
