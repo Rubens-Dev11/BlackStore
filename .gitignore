@@ -3,12 +3,11 @@ node_modules/
 .pnp
 .pnp.js
 
-# Environment
+# Environment (dépôt public : aucun .env réel, seulement les modèles *.example)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Build outputs
 dist/
@@ -47,3 +46,6 @@ minio-data/
 
 # Misc
 *.tsbuildinfo
+
+# Sauvegardes créées par les scripts de correctifs sur le serveur
+.backups/
