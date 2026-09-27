@@ -10,7 +10,7 @@ Boutique en ligne de produits numériques (applications Android, logiciels, fich
 - Catalogue avec filtre par catégorie ; les produits mis en avant apparaissent en premier.
 - Fiche produit : captures d'écran, vidéo de démonstration, guide d'installation, note des clients et nombre de téléchargements.
 - Panier et commande sans création de compte (nom, e-mail, téléphone).
-- Produits gratuits : commande validée immédiatement. Produits payants : paiement en ligne (CinetPay aujourd'hui, Tara prévu).
+- Produits gratuits : commande validée immédiatement. Produits payants : paiement en ligne via CinetPay (Mobile Money et carte), en cours de mise en service.
 - Livraison sécurisée : chaque achat donne un lien de téléchargement personnel, limité dans le temps (72 h par défaut) et en nombre de téléchargements (3 par défaut), sur la page de confirmation et par e-mail.
 
 ### Administration
@@ -74,5 +74,5 @@ docker compose -p blackstore --env-file .env.production -f docker-compose.prod.y
 
 ## Feuille de route
 
-- Paiement Mobile Money via Tara.
+- Paiement Mobile Money et carte via la nouvelle API CinetPay.
 - Marketplace : permettre à d'autres vendeurs de créer un compte et de vendre leurs propres produits numériques sur BlackStore, avec une commission pour la plateforme (en conception).

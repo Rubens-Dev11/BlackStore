@@ -816,10 +816,9 @@ export function ProductFormPage() {
           )}
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium">Fichier produit (APK, ZIP…)</label>
+            <label className="mb-1 block text-sm font-medium">Fichier produit (tout format : PDF, APK, ZIP, audio, vidéo…)</label>
             <input
               type="file"
-              accept=".apk,.exe,.zip,.dmg"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
