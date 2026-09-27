@@ -9,6 +9,7 @@ const navItems = [
   { to: '/commandes', label: 'Commandes' },
   { to: '/avis', label: 'Avis' },
   { to: '/analytics', label: 'Analytics' },
+  { to: '/compte', label: 'Mon compte' },
 ];
 
 export function AdminLayout() {

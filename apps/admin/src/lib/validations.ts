@@ -36,3 +36,19 @@ export const loginSchema = z.object({
 });
 
 export type LoginFormSchema = z.infer<typeof loginSchema>;
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
+  newPassword: z.string()
+    .min(12, 'Le nouveau mot de passe doit faire au moins 12 caractères')
+    .max(72, 'Le nouveau mot de passe doit faire au plus 72 caractères'),
+  confirmPassword: z.string(),
+})
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'La confirmation ne correspond pas au nouveau mot de passe',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "Le nouveau mot de passe doit être différent de l'actuel",
+    path: ['newPassword'],
+  });

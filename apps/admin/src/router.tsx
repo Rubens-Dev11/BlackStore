@@ -8,6 +8,7 @@ import { CategoriesPage } from '@/pages/categories-page';
 import { OrdersPage } from '@/pages/orders-page';
 import { ReviewsPage } from '@/pages/reviews-page';
 import { AnalyticsPage } from '@/pages/analytics-page';
+import { AccountPage } from '@/pages/account-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -25,6 +26,7 @@ export function AppRouter() {
         <Route path="/commandes" element={<OrdersPage />} />
         <Route path="/avis" element={<ReviewsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/compte" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

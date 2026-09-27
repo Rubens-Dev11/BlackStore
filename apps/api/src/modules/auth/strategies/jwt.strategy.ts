@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/prisma';
+import { passwordStamp } from '../password-stamp';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -25,7 +26,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
     });
 
-    if (!admin || !admin.isActive) {
+    // Un jeton émis avant le dernier changement de mot de passe n'est plus valable.
+    if (!admin || !admin.isActive || payload.pwd !== passwordStamp(admin.passwordHash)) {
       throw new UnauthorizedException();
     }
 

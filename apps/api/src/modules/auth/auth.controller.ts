@@ -1,8 +1,10 @@
-import { Controller, Post, Body, Res, HttpCode, HttpStatus, Req, UnauthorizedException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Patch, Body, Res, HttpCode, HttpStatus, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
@@ -63,5 +65,17 @@ export class AuthController {
 
     this.logger.log('Déconnexion réussie');
     return { message: 'Déconnexion réussie' };
+  }
+
+  @Patch('password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Changer le mot de passe de l'administrateur connecté" })
+  @ApiResponse({ status: 200, description: 'Mot de passe modifié, toutes les sessions sont fermées' })
+  @ApiResponse({ status: 400, description: 'Mot de passe actuel incorrect ou nouveau mot de passe invalide' })
+  async changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
+    await this.authService.changePassword((req.user as { userId: string }).userId, dto);
+    return { message: 'Mot de passe modifié' };
   }
 }
