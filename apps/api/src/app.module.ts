@@ -36,6 +36,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
         MINIO_BUCKET: Joi.string().default('blackstore-files'),
         MAIL_HOST: Joi.string().default('mailhog'),
         MAIL_PORT: Joi.number().default(1025),
+        // Adresse publique de l'API : base des liens de téléchargement envoyés par e-mail.
+        API_PUBLIC_URL: Joi.string().uri().default('http://localhost:3000'),
       }),
     }),
 

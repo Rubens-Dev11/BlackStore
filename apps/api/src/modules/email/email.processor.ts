@@ -20,8 +20,7 @@ export class EmailProcessor extends WorkerHost {
           await this.emailService.sendDownloadEmail(
             job.data.to,
             job.data.customerName,
-            job.data.products,
-            job.data.downloadLinks,
+            job.data.items,
           );
           break;
         case 'sendOrderConfirmation':

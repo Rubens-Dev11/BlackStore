@@ -40,20 +40,39 @@ export class EmailService {
     });
   }
 
+  /**
+   * Lien personnel de téléchargement : passe par l'API, qui vérifie l'expiration
+   * et le quota du jeton avant de rediriger vers le fichier.
+   */
+  private downloadUrl(token: string): string {
+    const base = this.configService.get<string>('API_PUBLIC_URL', 'http://localhost:3000');
+    return `${base.replace(/\/+$/, '')}/downloads/${token}`;
+  }
+
+  private static formatExpiry(date: Date): string {
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Africa/Douala',
+    });
+  }
+
   async sendDownloadEmail(
     to: string,
     customerName: string,
-    products: Array<{ name: string; downloadLink: string; expiry: string }>,
-    downloadLinks: string[],
+    items: Array<{ name: string; token: string; expiresAt: Date; maxDownloads: number }>,
   ): Promise<void> {
     try {
-      const productList = products
+      const productList = items
         .map(
-          (product) => `
+          (item) => `
             <li>
-              <strong>${product.name}</strong><br>
-              <a href="${product.downloadLink}">Télécharger</a>
-              (expire le ${product.expiry})
+              <strong>${item.name}</strong><br>
+              <a href="${this.downloadUrl(item.token)}">Télécharger</a>
+              (${item.maxDownloads} téléchargements, jusqu'au ${EmailService.formatExpiry(item.expiresAt)})
             </li>
           `,
         )
@@ -97,13 +116,13 @@ export class EmailService {
         <tr>
           <td style="padding:8px;border:1px solid #333;">${item.productName}</td>
           <td style="padding:8px;border:1px solid #333;">
-            <code>${item.token}</code>
+            <a href="${this.downloadUrl(item.token)}" style="color:#f97316;">Télécharger</a>
           </td>
           <td style="padding:8px;border:1px solid #333;">
             ${item.maxDownloads} téléchargements
           </td>
           <td style="padding:8px;border:1px solid #333;">
-            ${new Date(item.expiresAt).toLocaleDateString('fr-FR')}
+            ${EmailService.formatExpiry(new Date(item.expiresAt))}
           </td>
         </tr>
       `).join('');
@@ -119,12 +138,12 @@ export class EmailService {
             <h2>Merci ${data.buyerName} !</h2>
             <p>Votre commande <strong>${data.orderNumber}</strong> a été confirmée.</p>
             <p>Montant total : <strong>${data.totalAmount.toLocaleString('fr-FR')} FCFA</strong></p>
-            <h3>Vos tokens de téléchargement :</h3>
+            <h3>Vos téléchargements :</h3>
             <table style="width:100%;border-collapse:collapse;">
               <thead>
                 <tr style="background:#1a1a1a;">
                   <th style="padding:8px;border:1px solid #333;text-align:left;">Produit</th>
-                  <th style="padding:8px;border:1px solid #333;text-align:left;">Token</th>
+                  <th style="padding:8px;border:1px solid #333;text-align:left;">Lien</th>
                   <th style="padding:8px;border:1px solid #333;text-align:left;">Téléchargements</th>
                   <th style="padding:8px;border:1px solid #333;text-align:left;">Expire le</th>
                 </tr>
@@ -132,7 +151,7 @@ export class EmailService {
               <tbody>${tokenLinks}</tbody>
             </table>
             <p style="margin-top:24px;color:#999;font-size:12px;">
-              Conservez précieusement ces tokens. Chaque token est unique et personnel.
+              Ces liens sont personnels : ne les partagez pas.
             </p>
             <p style="color:#999;font-size:12px;">© 2026 BlackStore — Produits Numériques</p>
           </div>

@@ -9,7 +9,6 @@ import {
 import { Prisma, Order, OrderItem, Product } from '@prisma/client';
 import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
-import { FileStorageService } from '../file-storage/file-storage.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,7 +22,6 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
-    private readonly fileStorageService: FileStorageService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -212,33 +210,15 @@ export class PaymentsService {
       include: { orderItem: { include: { product: true } } },
     });
 
-    const products = downloadTokens.map((t) => ({
-      name: t.orderItem.product.name,
-      downloadLink: '',
-      expiry: t.expiresAt.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    }));
-
-    const downloadLinks = await Promise.all(
-      downloadTokens.map((t) =>
-        this.fileStorageService.getPresignedUrl(t.orderItem.product.filePath ?? '', 900),
-      ),
-    );
-
-    products.forEach((p, i) => {
-      p.downloadLink = downloadLinks[i];
-    });
-
     await this.emailService.sendDownloadEmail(
       order.buyerEmail,
       order.buyerName,
-      products,
-      downloadLinks,
+      downloadTokens.map((t) => ({
+        name: t.orderItem.product.name,
+        token: t.token,
+        expiresAt: t.expiresAt,
+        maxDownloads: t.maxDownloads,
+      })),
     );
 
     const emailItems = downloadTokens.map((t) => ({

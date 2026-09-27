@@ -2,7 +2,6 @@ import { Injectable, Logger, NotFoundException, ConflictException } from '@nestj
 import { Prisma, Product, DownloadToken, OrderStatus } from '@prisma/client';
 import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
-import { FileStorageService } from '../file-storage/file-storage.service';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderDto } from './dto/create-order.dto';
 
@@ -13,7 +12,6 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
-    private readonly fileStorageService: FileStorageService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
@@ -152,42 +150,15 @@ export class OrdersService {
 
     // Send download email
     try {
-      const products = downloadTokens.map((t) => ({
-        name: t.orderItem.product.name,
-        downloadLink: '',
-        expiry: t.expiresAt.toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      }));
-
-      const downloadLinks = await Promise.all(
-        downloadTokens.map(async (t) => {
-          const filePath = t.orderItem.product.filePath ?? '';
-          const fileName = filePath.split('/').pop() ?? 'file';
-          return this.fileStorageService.getPresignedUrl(
-            filePath,
-            3600,
-            {
-              'response-content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-              'response-content-type': 'application/octet-stream',
-            },
-          );
-        }),
-      );
-
-      products.forEach((p, i) => {
-        p.downloadLink = downloadLinks[i];
-      });
-
       await this.emailService.sendDownloadEmail(
         order.buyerEmail,
         order.buyerName,
-        products,
-        downloadLinks,
+        downloadTokens.map((t) => ({
+          name: t.orderItem.product.name,
+          token: t.token,
+          expiresAt: t.expiresAt,
+          maxDownloads: t.maxDownloads,
+        })),
       );
     } catch (error) {
       this.logger.error(`Échec de l'envoi de l'email de téléchargement pour la commande ${orderId}`, error);
@@ -297,40 +268,30 @@ export class OrdersService {
       throw new ConflictException('Aucun lien de téléchargement trouvé pour cette commande');
     }
 
-    const products = await Promise.all(
-      downloadTokens.map(
-        async (token: DownloadToken & { orderItem: { product: Product } }) => {
-          const filePath = token.orderItem.product.filePath ?? '';
-          const fileName = filePath.split('/').pop() ?? 'file';
-          return {
-            name: token.orderItem.product.name,
-            downloadLink: await this.fileStorageService.getPresignedUrl(
-              filePath,
-              900,
-              {
-                'response-content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-                'response-content-type': 'application/octet-stream',
-              },
-            ),
-            expiry: token.expiresAt.toLocaleDateString('fr-FR', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-          };
-        },
-      ),
+    // Renvoyer des liens déjà expirés ou épuisés ne servirait à rien : chaque
+    // jeton repart pour sa durée de validité, avec son quota complet.
+    const refreshedTokens = await Promise.all(
+      downloadTokens.map((token: DownloadToken & { orderItem: { product: Product } }) => {
+        const expiresAt = new Date();
+        expiresAt.setHours(
+          expiresAt.getHours() + (token.orderItem.product.downloadExpiryHours || 72),
+        );
+        return this.prisma.downloadToken.update({
+          where: { id: token.id },
+          data: { expiresAt, downloadCount: 0 },
+        });
+      }),
     );
-
-    const downloadLinks = products.map((p) => p.downloadLink);
 
     await this.emailService.sendDownloadEmail(
       order.buyerEmail,
       order.buyerName,
-      products,
-      downloadLinks,
+      refreshedTokens.map((t, i) => ({
+        name: downloadTokens[i].orderItem.product.name,
+        token: t.token,
+        expiresAt: t.expiresAt,
+        maxDownloads: t.maxDownloads,
+      })),
     );
 
     this.logger.log(`Liens de téléchargement renvoyés pour la commande : ${order.id}`);
