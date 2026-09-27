@@ -244,7 +244,7 @@ en simultané pour confirmer que rien n'est cassé.
 
 **Flux Admin (localhost:3002) :**
 - [ ] /login → formulaire avec style sombre
-- [ ] Login admin@blackstore.cm / Admin@BlackStore2026! → redirect /dashboard
+- [ ] Login admin@blackstore.cm / (mot de passe ADMIN_SEED_PASSWORD du .env) → redirect /dashboard
 - [ ] Refresh → reste connecté (localStorage persist)
 - [ ] /dashboard → 4 cartes stats + graphique ventes
 - [ ] /produits → liste avec toggles et badges
@@ -334,7 +334,7 @@ en simultané pour confirmer que rien n'est cassé.
 ## ACCÈS RAPIDE
 
 ```
-Admin : admin@blackstore.cm / Admin@BlackStore2026!
+Admin : admin@blackstore.cm / mot de passe défini par ADMIN_SEED_PASSWORD dans .env
 
 localhost:3000/docs  → Swagger API
 localhost:3001       → Storefront

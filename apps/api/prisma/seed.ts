@@ -11,13 +11,20 @@ async function main(): Promise<void> {
   console.log('🌱 Starting seed...');
 
   // ── ADMIN ─────────────────────────────────────────────────────────
-  const passwordHash = await bcrypt.hash('Admin@BlackStore2026!', 12);
+  // Identifiants lus dans l'environnement : aucun mot de passe par défaut
+  // n'est versionné (le dépôt est public).
+  const adminEmail = process.env.ADMIN_SEED_EMAIL || 'admin@blackstore.cm';
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12) {
+    throw new Error('ADMIN_SEED_PASSWORD absent ou trop court (12 caractères minimum) : définissez-le dans .env');
+  }
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   const admin = await prisma.admin.upsert({
-    where: { email: 'admin@blackstore.cm' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      email: 'admin@blackstore.cm',
+      email: adminEmail,
       passwordHash,
       isActive: true,
     },

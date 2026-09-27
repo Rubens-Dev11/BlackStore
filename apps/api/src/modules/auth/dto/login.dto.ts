@@ -6,7 +6,7 @@ export class LoginDto {
   @IsEmail({}, { message: 'L\'email doit être valide' })
   email!: string;
 
-  @ApiProperty({ example: 'Admin@BlackStore2026!' })
+  @ApiProperty({ example: 'votre-mot-de-passe' })
   @IsString()
   @MinLength(6, { message: 'Le mot de passe doit faire au moins 6 caractères' })
   password!: string;

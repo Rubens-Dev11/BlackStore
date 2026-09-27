@@ -283,7 +283,7 @@ Quand Rubens fournit la doc :
 
 ## IDENTIFIANTS
 
-Admin local : admin@blackstore.cm / Admin@BlackStore2026!
+Admin local : admin@blackstore.cm / mot de passe défini par ADMIN_SEED_PASSWORD dans .env
 
 | Service local | URL |
 |--------------|-----|
