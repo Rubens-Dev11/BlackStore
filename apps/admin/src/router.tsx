@@ -19,6 +19,9 @@ import { SellerResetPasswordPage } from '@/pages/seller/seller-reset-password-pa
 import { SellerDashboardPage } from '@/pages/seller/seller-dashboard-page';
 import { SellerAccountPage } from '@/pages/seller/seller-account-page';
 import { SellerStorePage } from '@/pages/seller/seller-store-page';
+import { SellerProductsPage } from '@/pages/seller/seller-products-page';
+import { SellerProductFormPage } from '@/pages/seller/seller-product-form-page';
+import { ProductReviewPage } from '@/pages/product-review-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -34,6 +37,9 @@ export function AppRouter() {
       <Route element={<SellerLayout />}>
         <Route path="/vendeur" element={<SellerDashboardPage />} />
         <Route path="/vendeur/boutique" element={<SellerStorePage />} />
+        <Route path="/vendeur/produits" element={<SellerProductsPage />} />
+        <Route path="/vendeur/produits/nouveau" element={<SellerProductFormPage />} />
+        <Route path="/vendeur/produits/:id" element={<SellerProductFormPage />} />
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
       </Route>
       <Route element={<AdminLayout />}>
@@ -47,6 +53,7 @@ export function AppRouter() {
         <Route path="/avis" element={<ReviewsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/vendeurs" element={<SellersPage />} />
+        <Route path="/produits-a-valider" element={<ProductReviewPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

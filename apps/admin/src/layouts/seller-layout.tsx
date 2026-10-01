@@ -6,6 +6,7 @@ import { useSellerPageTitle } from './seller-auth-card';
 const navItems = [
   { to: '/vendeur', label: 'Tableau de bord', end: true },
   { to: '/vendeur/boutique', label: 'Ma boutique', end: false },
+  { to: '/vendeur/produits', label: 'Mes produits', end: false },
   { to: '/vendeur/compte', label: 'Mon compte', end: false },
 ];
 

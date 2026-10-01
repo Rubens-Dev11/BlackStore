@@ -30,6 +30,8 @@ interface Product {
   ratingAvg: number;
   categoryId: string | null;
   createdAt: string;
+  /** Boutique du vendeur ; null pour les produits de BlackStore. */
+  store: { name: string; slug: string } | null;
 }
 
 
@@ -153,6 +155,9 @@ export function ProductsPage() {
                 </td>
                 <td className="py-2 px-4">
                   <div className="font-medium">{product.name}</div>
+                  {product.store && (
+                    <div className="text-xs text-orange-600">Boutique {product.store.name} — gérée dans « Produits à valider »</div>
+                  )}
                   {product.shortDescription && (
                     <div className="text-xs text-gray-500">{product.shortDescription}</div>
                   )}

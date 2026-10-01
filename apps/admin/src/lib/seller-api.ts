@@ -88,3 +88,72 @@ export async function sellerAuthRequest<T>(path: string, body: unknown): Promise
   }
   return data as T;
 }
+
+// ── Produits des vendeurs ───────────────────────────────────────────────
+
+export type ProductReviewStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+export type FileScanStatus = 'pending' | 'clean' | 'infected' | 'failed';
+export type ProductPlatform = 'android' | 'desktop' | 'multiplatform';
+
+export interface SellerProduct {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  description: string | null;
+  price: number;
+  originalPrice: number | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  platform: ProductPlatform;
+  version: string | null;
+  tags: string[];
+  coverUrl: string | null;
+  screenshotUrls: string[];
+  file: { name: string; sizeMb: number | null } | null;
+  scanStatus: FileScanStatus | null;
+  /** Nom de la menace quand l'antivirus a refusé le fichier. */
+  scanThreat: string | null;
+  reviewStatus: ProductReviewStatus;
+  /** Motif d'un refus par l'administrateur. */
+  reviewNote: string | null;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  isActive: boolean;
+  /** Visible et achetable sur le site en ce moment. */
+  isPublic: boolean;
+  publicUrl: string;
+  orderCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const PLATFORM_LABELS: Record<ProductPlatform, string> = {
+  android: 'Android',
+  desktop: 'Ordinateur (Windows, Mac)',
+  multiplatform: 'Tous les appareils',
+};
+
+/** Fichier du produit : 450 Mo au plus (même limite que l'API). */
+export const SELLER_FILE_MAX_BYTES = 450 * 1024 * 1024;
+export const SELLER_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const SELLER_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+/** Étiquette d'état d'un produit, du point de vue du vendeur. */
+export function sellerProductState(p: SellerProduct): { label: string; tone: 'gray' | 'yellow' | 'green' | 'red' | 'blue' } {
+  if (p.scanStatus === 'infected') return { label: "Fichier refusé par l'antivirus", tone: 'red' };
+  if (p.reviewStatus === 'draft') return { label: 'Brouillon', tone: 'gray' };
+  if (p.reviewStatus === 'pending') return { label: 'En attente de validation', tone: 'yellow' };
+  if (p.reviewStatus === 'rejected') return { label: 'Refusé', tone: 'red' };
+  if (p.scanStatus === 'pending') return { label: 'Analyse du nouveau fichier', tone: 'blue' };
+  if (!p.isActive) return { label: 'Masqué', tone: 'gray' };
+  return p.isPublic ? { label: 'En ligne', tone: 'green' } : { label: 'Validé', tone: 'green' };
+}
+
+export const TONE_CLASSES: Record<'gray' | 'yellow' | 'green' | 'red' | 'blue', string> = {
+  gray: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+  yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200',
+  green: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200',
+  red: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
+  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
+};

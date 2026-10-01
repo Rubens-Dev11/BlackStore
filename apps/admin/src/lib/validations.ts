@@ -111,6 +111,29 @@ export const sellerStoreSchema = z.object({
   }),
 });
 
+/** Mêmes règles que l'API : prix gratuit ou payable par Mobile Money (100 FCFA minimum, multiple de 5). */
+export const sellerProductSchema = z
+  .object({
+    name: z.string().trim().min(3, 'Nom du produit requis (3 caractères minimum)').max(120, 'Nom trop long (120 caractères maximum)'),
+    shortDescription: z.string().trim().max(160, "L'accroche doit faire au plus 160 caractères"),
+    description: z.string().max(5000, 'La description doit faire au plus 5 000 caractères'),
+    categoryId: z.string().min(1, 'Choisissez une catégorie'),
+    platform: z.enum(['android', 'desktop', 'multiplatform']),
+    price: z
+      .number({ message: 'Indiquez un prix en FCFA' })
+      .int('Le prix doit être un nombre entier de FCFA')
+      .refine((p) => p === 0 || (p >= 100 && p <= 1_000_000 && p % 5 === 0), {
+        message: 'Le prix doit être 0 (gratuit) ou de 100 à 1 000 000 FCFA, multiple de 5',
+      }),
+    originalPrice: z.number().int('Le prix barré doit être un nombre entier de FCFA').max(1_000_000).nullable(),
+    version: z.string().trim().max(20, 'La version doit faire au plus 20 caractères'),
+    tags: z.array(z.string().max(30, 'Chaque mot-clé doit faire au plus 30 caractères')).max(8, '8 mots-clés au maximum'),
+  })
+  .refine((v) => v.originalPrice === null || v.originalPrice > v.price, {
+    message: 'Le prix barré doit être supérieur au prix de vente',
+    path: ['originalPrice'],
+  });
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
   newPassword: z.string()

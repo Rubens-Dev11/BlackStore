@@ -1,4 +1,6 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { getApiUrl } from '@/lib/env';
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -10,11 +12,20 @@ const navItems = [
   { to: '/avis', label: 'Avis' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/vendeurs', label: 'Vendeurs' },
+  { to: '/produits-a-valider', label: 'Produits à valider' },
   { to: '/compte', label: 'Mon compte' },
 ];
 
 export function AdminLayout() {
   const { accessToken, role, clearAuth, _hasHydrated } = useAuthStore();
+  // Nombre de produits de vendeurs en attente, affiché dans le menu.
+  const { data: pendingProducts } = useQuery({
+    queryKey: ['admin-product-review', 'pending'],
+    queryFn: () => api.get<unknown[]>('/admin/products/review?status=pending', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 60_000,
+  });
+  const pendingCount = pendingProducts?.length ?? 0;
 
   if (!_hasHydrated) {
     return (
@@ -46,6 +57,9 @@ export function AdminLayout() {
               }
             >
               {item.label}
+              {item.to === '/produits-a-valider' && pendingCount > 0 && (
+                <span className="ml-2 rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-semibold text-white">{pendingCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>

@@ -19,10 +19,7 @@ const STATUS_BANNERS: Record<SellerStatus, { className: string; text: string }> 
   },
 };
 
-const COMING_STEPS = [
-  'Ajouter vos produits numériques',
-  'Suivre vos ventes et retirer vos gains par Mobile Money',
-];
+const COMING_STEPS = ['Suivre vos ventes et retirer vos gains par Mobile Money'];
 
 export function SellerDashboardPage() {
   const { accessToken } = useAuthStore();
@@ -53,6 +50,15 @@ export function SellerDashboardPage() {
               <Link to="/vendeur/boutique" className="font-medium text-primary hover:underline">
                 Créer votre boutique : nom, logo, description
               </Link>
+            )}
+          </li>
+          <li>
+            {me.store ? (
+              <Link to="/vendeur/produits" className="font-medium text-primary hover:underline">
+                Ajouter vos produits numériques
+              </Link>
+            ) : (
+              <>Ajouter vos produits numériques <span className="text-muted-foreground">(après la création de la boutique)</span></>
             )}
           </li>
           {COMING_STEPS.map((step) => (
