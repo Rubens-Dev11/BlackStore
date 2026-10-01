@@ -73,9 +73,14 @@ model Product {
   orderItems          OrderItem[]
   reviews             Review[]
   pageViews           PageView[]
+  // Boutique du vendeur ; vide pour les produits de BlackStore. Une boutique
+  // qui a des produits ne peut pas être supprimée.
+  storeId             String?                        @map("store_id")
+  store               Store?      @relation(fields: [storeId], references: [id], onDelete: Restrict)
   createdAt           DateTime    @default(now())    @map("created_at")
   updatedAt           DateTime    @updatedAt         @map("updated_at")
 
+  @@index([storeId])
   @@map("products")
 }
 
@@ -206,6 +211,7 @@ model Seller {
   statusChangedAt DateTime?                            @map("status_changed_at")
   lastLogin       DateTime?                            @map("last_login")
   tokens          SellerToken[]
+  store           Store?
   createdAt       DateTime      @default(now())        @map("created_at")
   updatedAt       DateTime      @updatedAt             @map("updated_at")
 
@@ -230,6 +236,28 @@ model SellerToken {
 
   @@index([sellerId, type])
   @@map("seller_tokens")
+}
+
+// ─────────────────────────────────────────────
+// BOUTIQUE D'UN VENDEUR (une par vendeur en V1)
+// ─────────────────────────────────────────────
+model Store {
+  id           String    @id @default(uuid())
+  sellerId     String    @unique                  @map("seller_id")
+  seller       Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  name         String    @db.VarChar(60)
+  slug         String    @unique @db.VarChar(40)  // adresse : /boutique/<slug>
+  description  String?   @db.Text
+  logoKey      String?   @db.VarChar(255)         @map("logo_key")
+  facebookUrl  String?   @db.VarChar(200)         @map("facebook_url")
+  instagramUrl String?   @db.VarChar(200)         @map("instagram_url")
+  tiktokUrl    String?   @db.VarChar(200)         @map("tiktok_url")
+  whatsapp     String?   @db.VarChar(20)
+  products     Product[]
+  createdAt    DateTime  @default(now())          @map("created_at")
+  updatedAt    DateTime  @updatedAt               @map("updated_at")
+
+  @@map("stores")
 }
 
 // ─────────────────────────────────────────────

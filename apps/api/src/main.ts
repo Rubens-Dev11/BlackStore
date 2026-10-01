@@ -20,7 +20,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: ['http://localhost:3001', 'http://localhost:3002', 'https://blackstore.pymail.cm', 'https://admin.blackstore.pymail.cm'],
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 

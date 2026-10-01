@@ -37,6 +37,7 @@ const SELLER_PROFILE = {
   statusChangedAt: true,
   lastLogin: true,
   createdAt: true,
+  store: { select: { name: true, slug: true } },
 } satisfies Prisma.SellerSelect;
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');

@@ -125,6 +125,36 @@ export class FileStorageService implements OnModuleInit {
     return objectKey;
   }
 
+  async uploadStoreLogo(
+    buffer: Buffer,
+    storeId: string,
+    mimeType: string,
+  ): Promise<string> {
+    const ext = (mimeType.split('/')[1] || 'png').split('+')[0];
+    const objectKey = `stores/${storeId}/logo-${randomUUID()}.${ext}`;
+
+    await this.minioClient.putObject(
+      this.bucketName,
+      objectKey,
+      buffer,
+      buffer.length,
+      { 'Content-Type': mimeType },
+    );
+
+    this.logger.log(`Logo de boutique uploadé : ${objectKey}`);
+    return objectKey;
+  }
+
+  /** Supprime un fichier ; un échec est journalisé sans bloquer (il reste au pire un fichier orphelin). */
+  async removeObject(objectKey: string): Promise<void> {
+    try {
+      await this.minioClient.removeObject(this.bucketName, objectKey);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Suppression impossible de ${objectKey} : ${message}`);
+    }
+  }
+
   async getPresignedUrl(
     objectKey: string,
     expiresInSeconds: number,

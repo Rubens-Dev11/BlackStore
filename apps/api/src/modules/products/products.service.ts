@@ -107,6 +107,32 @@ export class ProductsService {
     };
   }
 
+  /** Produits actifs d'une boutique, au même format que le catalogue. */
+  async findByStore(storeId: string) {
+    const data = await this.prisma.product.findMany({
+      where: { storeId, isActive: true },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        shortDescription: true,
+        coverImageUrl: true,
+        screenshots: true,
+        price: true,
+        originalPrice: true,
+        platform: true,
+        isFeatured: true,
+        _count: ProductsService.PAID_ORDERS_COUNT,
+        ratingAvg: true,
+        ratingCount: true,
+        viewCount: true,
+        categoryId: true,
+      },
+    });
+    return Promise.all(data.map((p) => this.withImageUrls(this.withDownloadCount(p))));
+  }
+
   async findAllAdmin() {
     const data = await this.prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
@@ -214,6 +240,10 @@ export class ProductsService {
         categoryId: true,
         category: {
           select: { id: true, name: true, slug: true },
+        },
+        // « Vendu par » : absent pour les produits de BlackStore.
+        store: {
+          select: { name: true, slug: true },
         },
       },
     });
