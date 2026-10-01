@@ -35,7 +35,7 @@ export function LoginPage() {
 
       if (response.ok) {
         const data: LoginResponse = await response.json();
-        setTokens(data.accessToken, data.refreshToken);
+        setTokens(data.accessToken, data.refreshToken, 'admin');
         navigate('/dashboard');
         notify.success('Connexion réussie');
       } else if (response.status === 401) {

@@ -1,5 +1,5 @@
 import { getApiUrl } from './env';
-import { useAuthStore } from '@/stores/use-auth-store';
+import { loginPathFor, useAuthStore } from '@/stores/use-auth-store';
 
 const BASE_URL = getApiUrl();
 
@@ -43,11 +43,12 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
     return await performFetch(token);
   } catch (err: any) {
     if (err.status === 401 && token) {
-      const { refreshToken } = useAuthStore.getState();
+      const { refreshToken, role } = useAuthStore.getState();
+      const loginPath = loginPathFor(role);
       if (!refreshToken) {
         // No refresh token, logout
         useAuthStore.getState().clearAuth();
-        window.location.href = '/login';
+        window.location.href = loginPath;
         throw err;
       }
 
@@ -65,7 +66,8 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
 
       isRefreshing = true;
       try {
-        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+        const refreshPath = role === 'seller' ? '/seller/auth/refresh' : '/auth/refresh';
+        const refreshResponse = await fetch(`${BASE_URL}${refreshPath}`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -94,6 +96,11 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
         return result;
       } catch (err) {
         refreshQueue = [];
+        // Session expirée ou fermée (mot de passe changé, compte suspendu) : retour à la connexion.
+        if (err instanceof Error && err.message === 'Refresh failed') {
+          useAuthStore.getState().clearAuth();
+          window.location.href = loginPath;
+        }
         throw err;
       } finally {
         isRefreshing = false;
