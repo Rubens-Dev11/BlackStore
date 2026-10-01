@@ -39,6 +39,8 @@ export interface ProductDetail extends ProductSummary {
   viewCount: number;
   seoTitle: string | null;
   seoDescription: string | null;
+  /** Boutique du vendeur ; null pour les produits vendus par BlackStore. */
+  store: { name: string; slug: string } | null;
 }
 
 export async function fetchProducts(params?: {

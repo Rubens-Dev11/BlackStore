@@ -174,6 +174,18 @@ export function ProductPageClient({ product }: Props) {
             {product.name}
           </h1>
 
+          {/* Vendeur */}
+          <p className="text-sm text-zinc-400">
+            Vendu par{' '}
+            {product.store ? (
+              <Link href={`/boutique/${product.store.slug}`} className="font-medium text-orange-400 hover:underline">
+                {product.store.name}
+              </Link>
+            ) : (
+              <span className="font-medium text-white">BlackStore</span>
+            )}
+          </p>
+
           {/* Description courte */}
           {product.shortDescription && (
             <p className="text-base sm:text-lg text-zinc-400">{product.shortDescription}</p>
