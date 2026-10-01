@@ -18,6 +18,7 @@ import { SellerForgotPasswordPage } from '@/pages/seller/seller-forgot-password-
 import { SellerResetPasswordPage } from '@/pages/seller/seller-reset-password-page';
 import { SellerDashboardPage } from '@/pages/seller/seller-dashboard-page';
 import { SellerAccountPage } from '@/pages/seller/seller-account-page';
+import { SellerStorePage } from '@/pages/seller/seller-store-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -32,6 +33,7 @@ export function AppRouter() {
       <Route path="/vendeur/reinitialiser-mot-de-passe" element={<SellerResetPasswordPage />} />
       <Route element={<SellerLayout />}>
         <Route path="/vendeur" element={<SellerDashboardPage />} />
+        <Route path="/vendeur/boutique" element={<SellerStorePage />} />
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
       </Route>
       <Route element={<AdminLayout />}>

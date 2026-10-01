@@ -91,6 +91,26 @@ export const sellerChangePasswordSchema = z.object({
     path: ['newPassword'],
   });
 
+const optionalHttps = (label: string) =>
+  z.string().trim().refine((value) => value === '' || /^https:\/\/\S+$/.test(value), {
+    message: `Le lien ${label} doit être une adresse complète commençant par https://`,
+  });
+
+export const sellerStoreSchema = z.object({
+  name: z.string().trim().min(2, 'Nom de la boutique requis (2 caractères minimum)').max(60, 'Nom trop long (60 caractères maximum)'),
+  slug: z.string()
+    .min(3, "L'adresse doit faire au moins 3 caractères")
+    .max(40, "L'adresse doit faire au plus 40 caractères")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "L'adresse ne peut contenir que des lettres minuscules sans accent, des chiffres et des tirets"),
+  description: z.string().max(1000, 'La description doit faire au plus 1 000 caractères'),
+  facebookUrl: optionalHttps('Facebook'),
+  instagramUrl: optionalHttps('Instagram'),
+  tiktokUrl: optionalHttps('TikTok'),
+  whatsapp: z.string().trim().refine((value) => value === '' || /^\+?[\d\s().-]{8,20}$/.test(value), {
+    message: 'Numéro WhatsApp invalide',
+  }),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
   newPassword: z.string()

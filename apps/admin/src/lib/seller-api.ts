@@ -13,6 +13,33 @@ export interface SellerProfile {
   statusChangedAt: string | null;
   lastLogin: string | null;
   createdAt: string;
+  store: { name: string; slug: string } | null;
+}
+
+export interface SellerStore {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  tiktokUrl: string | null;
+  whatsapp: string | null;
+  logoUrl: string | null;
+  /** Adresse publique de la boutique sur le site. */
+  publicUrl: string;
+}
+
+/** Adresse de boutique proposée à partir de son nom : « Awa Digital » → « awa-digital ». */
+export function slugify(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/, '');
 }
 
 export interface SellerTokens {

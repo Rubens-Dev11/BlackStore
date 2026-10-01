@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { SellerProfile, SellerStatus } from '@/lib/seller-api';
 import { useAuthStore } from '@/stores/use-auth-store';
@@ -18,8 +19,7 @@ const STATUS_BANNERS: Record<SellerStatus, { className: string; text: string }> 
   },
 };
 
-const NEXT_STEPS = [
-  'Créer votre boutique : nom, logo, description',
+const COMING_STEPS = [
   'Ajouter vos produits numériques',
   'Suivre vos ventes et retirer vos gains par Mobile Money',
 ];
@@ -43,7 +43,19 @@ export function SellerDashboardPage() {
       <section className="rounded-lg border bg-background p-4">
         <h2 className="mb-3 text-sm font-semibold">Prochaines étapes</h2>
         <ol className="list-decimal space-y-2 pl-5 text-sm">
-          {NEXT_STEPS.map((step) => (
+          <li>
+            {me.store ? (
+              <>
+                Boutique créée : <strong>{me.store.name}</strong>{' '}
+                <Link to="/vendeur/boutique" className="text-primary hover:underline">(modifier)</Link>
+              </>
+            ) : (
+              <Link to="/vendeur/boutique" className="font-medium text-primary hover:underline">
+                Créer votre boutique : nom, logo, description
+              </Link>
+            )}
+          </li>
+          {COMING_STEPS.map((step) => (
             <li key={step}>
               {step} <span className="text-muted-foreground">(bientôt disponible)</span>
             </li>

@@ -93,6 +93,7 @@ export function SellersPage() {
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Vendeur</th>
+                <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Boutique</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Téléphone</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">E-mail confirmé</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Statut</th>
@@ -109,6 +110,16 @@ export function SellersPage() {
                     <td className="py-3 px-4">
                       <div className="font-medium">{seller.firstName} {seller.lastName}</div>
                       <div className="text-xs text-muted-foreground">{seller.email}</div>
+                    </td>
+                    <td className="py-3 px-4">
+                      {seller.store ? (
+                        <>
+                          <div className="font-medium">{seller.store.name}</div>
+                          <div className="text-xs text-muted-foreground">/boutique/{seller.store.slug}</div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Pas encore créée</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-mono text-xs">{seller.phone}</td>
                     <td className="py-3 px-4 text-xs">{seller.emailVerifiedAt ? 'Oui' : 'Non'}</td>

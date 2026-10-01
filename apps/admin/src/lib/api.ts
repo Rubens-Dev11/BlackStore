@@ -186,6 +186,13 @@ export const api = {
       headers: { Authorization: accessToken ? `Bearer ${accessToken}` : '' },
     })
       .then((res) => res.json()) as Promise<T>,
+  put: <T>(path: string, body: unknown, accessToken?: string | null) =>
+    fetchWithRefresh(`${BASE_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: accessToken ? `Bearer ${accessToken}` : '' },
+      body: JSON.stringify(body),
+    })
+      .then((res) => res.json()) as Promise<T>,
   patch: <T>(path: string, body: unknown, accessToken?: string | null) =>
     fetchWithRefresh(`${BASE_URL}${path}`, {
       method: 'PATCH',
