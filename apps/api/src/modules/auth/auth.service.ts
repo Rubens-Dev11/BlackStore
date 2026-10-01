@@ -78,7 +78,7 @@ export class AuthService {
       const payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
-      if (payload.type !== 'refresh') {
+      if (payload.type !== 'refresh' || payload.role === 'seller') {
         throw new UnauthorizedException('Token invalide');
       }
 

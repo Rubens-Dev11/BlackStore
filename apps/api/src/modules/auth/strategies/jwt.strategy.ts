@@ -22,6 +22,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * Validate the JWT payload and attach the user to the request object.
    */
   async validate(payload: any) {
+    // Les jetons vendeurs sont signés avec le même secret : jamais valables ici.
+    if (payload.role === 'seller') {
+      throw new UnauthorizedException();
+    }
+
     const admin = await this.prisma.admin.findUnique({
       where: { id: payload.sub },
     });

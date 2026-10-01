@@ -186,6 +186,53 @@ model Admin {
 }
 
 // ─────────────────────────────────────────────
+// VENDEUR (MARKETPLACE)
+// ─────────────────────────────────────────────
+enum SellerStatus {
+  pending
+  approved
+  suspended
+}
+
+model Seller {
+  id              String        @id @default(uuid())
+  email           String        @unique @db.VarChar(150)
+  passwordHash    String        @db.VarChar(255)       @map("password_hash")
+  firstName       String        @db.VarChar(80)        @map("first_name")
+  lastName        String        @db.VarChar(80)        @map("last_name")
+  phone           String        @db.VarChar(20)
+  status          SellerStatus  @default(pending)
+  emailVerifiedAt DateTime?                            @map("email_verified_at")
+  statusChangedAt DateTime?                            @map("status_changed_at")
+  lastLogin       DateTime?                            @map("last_login")
+  tokens          SellerToken[]
+  createdAt       DateTime      @default(now())        @map("created_at")
+  updatedAt       DateTime      @updatedAt             @map("updated_at")
+
+  @@map("sellers")
+}
+
+enum SellerTokenType {
+  email_verification
+  password_reset
+}
+
+// Lien à usage unique envoyé par e-mail : seule son empreinte SHA-256 est stockée.
+model SellerToken {
+  id        String          @id @default(uuid())
+  sellerId  String                                  @map("seller_id")
+  seller    Seller          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  type      SellerTokenType
+  tokenHash String          @unique @db.VarChar(64) @map("token_hash")
+  expiresAt DateTime                                @map("expires_at")
+  usedAt    DateTime?                               @map("used_at")
+  createdAt DateTime        @default(now())         @map("created_at")
+
+  @@index([sellerId, type])
+  @@map("seller_tokens")
+}
+
+// ─────────────────────────────────────────────
 // VUE DE PAGE (ANALYTICS)
 // ─────────────────────────────────────────────
 model PageView {

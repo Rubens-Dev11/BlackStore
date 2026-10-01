@@ -16,6 +16,7 @@ import { DownloadsModule } from './modules/downloads/downloads.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { SellersModule } from './modules/sellers/sellers.module';
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
         MAIL_PORT: Joi.number().default(1025),
         // Adresse publique de l'API : base des liens de téléchargement envoyés par e-mail.
         API_PUBLIC_URL: Joi.string().uri().default('http://localhost:3000'),
+        // Adresse de l'espace vendeur : base des liens de confirmation et de réinitialisation.
+        SELLER_APP_URL: Joi.string().uri().default('http://localhost:3002'),
       }),
     }),
 
@@ -67,6 +70,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     ReviewsModule,
     AnalyticsModule,
     DashboardModule,
+    SellersModule,
   ],
 })
 export class AppModule {}

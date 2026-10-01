@@ -164,4 +164,97 @@ export class EmailService {
       this.logger.error(`Échec envoi confirmation à ${data.buyerEmail}: ${message}`);
     }
   }
+
+  // ─────────────────────────────────────────────
+  // E-mails des vendeurs
+  // ─────────────────────────────────────────────
+
+  private static escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /** Mise en page commune : message + bouton d'action + note de bas de page. */
+  private static sellerLayout(parts: { lines: string[]; button?: { label: string; url: string }; note?: string }): string {
+    const paragraphs = parts.lines.map((line) => `<p>${line}</p>`).join('');
+    const button = parts.button
+      ? `<p style="margin:24px 0;"><a href="${parts.button.url}" style="background:#f97316;color:#fff;
+          padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">${parts.button.label}</a></p>`
+      : '';
+    const note = parts.note ? `<p style="color:#999;font-size:12px;">${parts.note}</p>` : '';
+    return `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;
+        background:#0a0a0a;color:#fff;padding:32px;border-radius:8px;">
+        <h1 style="color:#f97316;">BlackStore</h1>
+        ${paragraphs}${button}${note}
+        <p style="color:#999;font-size:12px;">© 2026 BlackStore — Produits Numériques</p>
+      </div>`;
+  }
+
+  private async sendSellerMail(to: string, subject: string, html: string): Promise<void> {
+    try {
+      await this.transporter.sendMail({ from: this.fromAddress, to, subject, html });
+      this.logger.log(`E-mail vendeur « ${subject} » envoyé à ${to}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Échec envoi e-mail vendeur à ${to}: ${message}`);
+    }
+  }
+
+  async sendSellerVerification(to: string, firstName: string, link: string): Promise<void> {
+    await this.sendSellerMail(
+      to,
+      'Confirmez votre adresse e-mail — BlackStore Vendeurs',
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          'Merci pour votre inscription comme vendeur sur BlackStore. Confirmez votre adresse e-mail pour activer votre compte : ce lien est valable 48 heures.',
+        ],
+        button: { label: 'Confirmer mon adresse', url: link },
+        note: "Si vous n'êtes pas à l'origine de cette inscription, ignorez cet e-mail.",
+      }),
+    );
+  }
+
+  async sendSellerPasswordReset(to: string, firstName: string, link: string): Promise<void> {
+    await this.sendSellerMail(
+      to,
+      'Réinitialisation de votre mot de passe — BlackStore Vendeurs',
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          'Vous avez demandé à changer le mot de passe de votre compte vendeur. Ce lien est valable 1 heure.',
+        ],
+        button: { label: 'Choisir un nouveau mot de passe', url: link },
+        note: "Si vous n'avez rien demandé, ignorez cet e-mail : votre mot de passe reste inchangé.",
+      }),
+    );
+  }
+
+  async sendSellerStatus(to: string, firstName: string, status: 'approved' | 'suspended'): Promise<void> {
+    const appUrl = this.configService.get<string>('SELLER_APP_URL', 'http://localhost:3002').replace(/\/+$/, '');
+    const hello = `Bonjour ${EmailService.escapeHtml(firstName)},`;
+    if (status === 'approved') {
+      await this.sendSellerMail(
+        to,
+        'Votre compte vendeur est validé — BlackStore',
+        EmailService.sellerLayout({
+          lines: [hello, 'Bonne nouvelle : votre compte vendeur BlackStore est validé. Vous pouvez préparer votre boutique.'],
+          button: { label: 'Accéder à mon espace vendeur', url: `${appUrl}/vendeur` },
+        }),
+      );
+      return;
+    }
+    await this.sendSellerMail(
+      to,
+      'Votre compte vendeur est suspendu — BlackStore',
+      EmailService.sellerLayout({
+        lines: [hello, 'Votre compte vendeur BlackStore a été suspendu. Contactez le support BlackStore pour en savoir plus.'],
+      }),
+    );
+  }
 }
