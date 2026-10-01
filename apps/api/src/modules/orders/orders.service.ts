@@ -4,6 +4,7 @@ import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { PUBLIC_PRODUCT_WHERE } from '../products/product-visibility';
 
 @Injectable()
 export class OrdersService {
@@ -18,7 +19,8 @@ export class OrdersService {
     const { items, ...orderData } = createOrderDto;
 
     const products = await this.prisma.product.findMany({
-      where: { id: { in: items.map((item) => item.productId) }, isActive: true },
+      // Seuls les produits visibles sur le site s'achètent (vendeur validé, fichier vérifié…).
+      where: { id: { in: items.map((item) => item.productId) }, ...PUBLIC_PRODUCT_WHERE },
     });
 
     if (products.length !== items.length) {

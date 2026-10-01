@@ -18,6 +18,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { StoresModule } from './modules/stores/stores.module';
+import { SellerProductsModule } from './modules/seller-products/seller-products.module';
 
 @Module({
   imports: [
@@ -44,6 +45,9 @@ import { StoresModule } from './modules/stores/stores.module';
         SELLER_APP_URL: Joi.string().uri().default('http://localhost:3002'),
         // Adresse de la boutique en ligne : base des liens publics des boutiques vendeurs.
         STOREFRONT_URL: Joi.string().uri().default('http://localhost:3001'),
+        // Antivirus ClamAV (démon clamd) qui analyse les fichiers des vendeurs.
+        CLAMAV_HOST: Joi.string().default('clamav'),
+        CLAMAV_PORT: Joi.number().default(3310),
       }),
     }),
 
@@ -75,6 +79,7 @@ import { StoresModule } from './modules/stores/stores.module';
     DashboardModule,
     SellersModule,
     StoresModule,
+    SellerProductsModule,
   ],
 })
 export class AppModule {}

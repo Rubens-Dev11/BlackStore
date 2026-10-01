@@ -77,11 +77,35 @@ model Product {
   // qui a des produits ne peut pas être supprimée.
   storeId             String?                        @map("store_id")
   store               Store?      @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  // Validation des produits des vendeurs ; ceux de BlackStore sont validés d'office.
+  reviewStatus        ProductReviewStatus @default(approved) @map("review_status")
+  reviewNote          String?     @db.VarChar(500)   @map("review_note") // motif d'un refus
+  submittedAt         DateTime?                      @map("submitted_at")
+  reviewedAt          DateTime?                      @map("reviewed_at")
+  // Analyse antivirus des fichiers déposés par les vendeurs ; vide pour ceux de l'admin.
+  scanStatus          FileScanStatus?                @map("scan_status")
+  scanResult          String?     @db.VarChar(200)   @map("scan_result") // nom de la menace détectée
+  scannedAt           DateTime?                      @map("scanned_at")
   createdAt           DateTime    @default(now())    @map("created_at")
   updatedAt           DateTime    @updatedAt         @map("updated_at")
 
   @@index([storeId])
+  @@index([reviewStatus])
   @@map("products")
+}
+
+enum ProductReviewStatus {
+  draft    // en préparation par le vendeur
+  pending  // soumis, en attente de l'administrateur
+  approved // publiable
+  rejected // refusé (motif dans reviewNote)
+}
+
+enum FileScanStatus {
+  pending  // analyse en cours
+  clean
+  infected // fichier supprimé
+  failed   // analyse impossible après plusieurs essais
 }
 
 // ─────────────────────────────────────────────

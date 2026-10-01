@@ -16,3 +16,11 @@ export const Trim = () =>
 
 export const NormalizeEmail = () =>
   Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value));
+
+/** Champ facultatif : une chaîne vide (champ effacé dans le formulaire) vaut « aucune valeur ». */
+export const EmptyToNull = () =>
+  Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed === '' ? null : trimmed;
+  });

@@ -1,15 +1,7 @@
 import { IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { SELLER_PHONE_MESSAGE, SELLER_PHONE_PATTERN, Trim } from '../../sellers/dto/seller-fields';
-
-/** Champ facultatif : une chaîne vide (champ effacé dans le formulaire) vaut « aucune valeur ». */
-const EmptyToNull = () =>
-  Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    return trimmed === '' ? null : trimmed;
-  });
+import { EmptyToNull, SELLER_PHONE_MESSAGE, SELLER_PHONE_PATTERN, Trim } from '../../sellers/dto/seller-fields';
 
 const httpsUrl = (label: string) =>
   IsUrl(

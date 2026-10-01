@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import { pipeline, Readable, Transform } from 'stream';
 
 @Injectable()
 export class FileStorageService implements OnModuleInit {
@@ -86,19 +88,57 @@ export class FileStorageService implements OnModuleInit {
     return { objectKey, sha256, sizeBytes };
   }
 
+  /**
+   * Fichier d'un produit de vendeur, envoyé depuis le fichier temporaire du disque
+   * (jamais entièrement en mémoire) : empreinte SHA-256 calculée au passage.
+   * Toujours servi en téléchargement, quel que soit son contenu.
+   */
+  async uploadProductFileFromDisk(
+    tempPath: string,
+    productId: string,
+    fileName: string,
+  ): Promise<{ objectKey: string; sha256: string; sizeBytes: number }> {
+    const sizeBytes = (await fs.promises.stat(tempPath)).size;
+    const objectKey = `products/${productId}/${randomUUID()}/${fileName}`;
+    const hash = crypto.createHash('sha256');
+    const hashing = new Transform({
+      transform(chunk: Buffer, _encoding, callback) {
+        hash.update(chunk);
+        callback(null, chunk);
+      },
+    });
+    // pipeline détruit les deux flux en cas d'erreur de lecture : l'envoi échoue alors proprement.
+    pipeline(fs.createReadStream(tempPath), hashing, () => undefined);
+
+    await this.minioClient.putObject(this.bucketName, objectKey, hashing, sizeBytes, {
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    });
+
+    this.logger.log(`Fichier vendeur uploadé : ${objectKey} (${sizeBytes} octets)`);
+    return { objectKey, sha256: hash.digest('hex'), sizeBytes };
+  }
+
+  /** Lecture en flux d'un fichier stocké (analyse antivirus). */
+  async getObjectStream(objectKey: string): Promise<Readable> {
+    return this.minioClient.getObject(this.bucketName, objectKey);
+  }
+
   async uploadScreenshot(
     buffer: Buffer,
     productId: string,
     index: number,
+    mimeType = 'image/webp',
   ): Promise<string> {
-    const objectKey = `screenshots/${productId}/${index}-${randomUUID()}.webp`;
+    const ext = (mimeType.split('/')[1] || 'webp').split('+')[0];
+    const objectKey = `screenshots/${productId}/${index}-${randomUUID()}.${ext}`;
 
     await this.minioClient.putObject(
       this.bucketName,
       objectKey,
       buffer,
       buffer.length,
-      { 'Content-Type': 'image/webp' },
+      { 'Content-Type': mimeType },
     );
 
     this.logger.log(`Screenshot uploadé : ${objectKey}`);

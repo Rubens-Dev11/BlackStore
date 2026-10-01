@@ -6,6 +6,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { Platform, Prisma } from '@prisma/client';
 import 'multer';
+import { PUBLIC_PRODUCT_WHERE, plainTextToHtml } from './product-visibility';
 
 @Injectable()
 export class ProductsService {
@@ -61,7 +62,7 @@ export class ProductsService {
   async findAll(query: ProductQueryDto) {
     const { page = 1, limit = 12, categoryId, featured } = query;
 
-    const where: any = { isActive: true };
+    const where: Prisma.ProductWhereInput = { ...PUBLIC_PRODUCT_WHERE };
     if (categoryId) where.categoryId = categoryId;
     if (featured) where.isFeatured = featured;
 
@@ -110,7 +111,7 @@ export class ProductsService {
   /** Produits actifs d'une boutique, au même format que le catalogue. */
   async findByStore(storeId: string) {
     const data = await this.prisma.product.findMany({
-      where: { storeId, isActive: true },
+      where: { storeId, ...PUBLIC_PRODUCT_WHERE },
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
       select: {
         id: true,
@@ -136,7 +137,10 @@ export class ProductsService {
   async findAllAdmin() {
     const data = await this.prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { _count: ProductsService.PAID_ORDERS_COUNT },
+      include: {
+        _count: ProductsService.PAID_ORDERS_COUNT,
+        store: { select: { name: true, slug: true } },
+      },
     });
 
     return {
@@ -150,7 +154,7 @@ export class ProductsService {
 
   async findFeatured() {
     const data = await this.prisma.product.findMany({
-      where: { isFeatured: true, isActive: true },
+      where: { isFeatured: true, ...PUBLIC_PRODUCT_WHERE },
       take: 8,
       orderBy: { viewCount: 'desc' },
       select: {
@@ -182,11 +186,11 @@ export class ProductsService {
     return await this.prisma.product.findMany({
       where: {
         AND: [
-          { isActive: true },
+          PUBLIC_PRODUCT_WHERE,
           {
             OR: [
-              { name: { contains: q, mode: 'insensitive' } },
-              { description: { contains: q, mode: 'insensitive' } },
+              { name: { contains: q, mode: 'insensitive' as const } },
+              { description: { contains: q, mode: 'insensitive' as const } },
             ],
           },
         ],
@@ -210,8 +214,8 @@ export class ProductsService {
   }
 
   async findBySlug(slug: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { slug, isActive: true },
+    const product = await this.prisma.product.findFirst({
+      where: { slug, ...PUBLIC_PRODUCT_WHERE },
       select: {
         id: true,
         name: true,
@@ -257,7 +261,9 @@ export class ProductsService {
       data: { viewCount: product.viewCount + 1 },
     });
 
-    return await this.withImageUrls(this.withDownloadCount(product));
+    // Une description de vendeur est du texte brut : jamais interprétée comme du HTML.
+    const description = product.store ? plainTextToHtml(product.description) : product.description;
+    return await this.withImageUrls(this.withDownloadCount({ ...product, description }));
   }
 
   async findById(id: string) {
@@ -296,7 +302,7 @@ export class ProductsService {
 
     let slug = product.slug;
     if (updateProductDto.name && updateProductDto.name !== product.name) {
-      slug = await this.generateUniqueSlug(updateProductDto.name);
+      slug = await this.generateUniqueSlug(updateProductDto.name, id);
     }
 
     return await this.prisma.product.update({
@@ -381,18 +387,27 @@ export class ProductsService {
     });
   }
 
-  private async generateUniqueSlug(name: string): Promise<string> {
+  /** Adresse libre tirée du nom ; celle du produit ignoreProductId (renommage) compte comme libre. */
+  async generateUniqueSlug(name: string, ignoreProductId?: string): Promise<string> {
+    // « Créations Numériques » → « creations-numeriques » (accents retirés plutôt que remplacés par des tirets).
     let slug = name
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .slice(0, 80)
+      .replace(/^-+|-+$/g, '') || 'produit';
 
-    let existing = await this.prisma.product.findUnique({ where: { slug } });
+    const taken = async (candidate: string) => {
+      const found = await this.prisma.product.findUnique({ where: { slug: candidate }, select: { id: true } });
+      return !!found && found.id !== ignoreProductId;
+    };
+    let existing = await taken(slug);
     let suffix = 2;
 
     while (existing) {
       const newSlug = `${slug}-${suffix}`;
-      existing = await this.prisma.product.findUnique({ where: { slug: newSlug } });
+      existing = await taken(newSlug);
       if (!existing) {
         slug = newSlug;
         break;

@@ -7,6 +7,7 @@ volumes:
   redis-data:
   minio-data:
   files-storage:
+  clamav-db:
 
 services:
   nestjs-api:
@@ -104,5 +105,18 @@ services:
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
+    networks: [blackstore-network]
+    restart: unless-stopped
+
+  # Antivirus des fichiers déposés par les vendeurs (démon clamd sur le port 3310, joignable
+  # seulement depuis le réseau interne). Signatures mises à jour chaque jour par freshclam et
+  # gardées dans le volume clamav-db. Prêt une trentaine de secondes après le démarrage.
+  clamav:
+    image: clamav/clamav:1.5
+    container_name: blackstore-clamav
+    volumes:
+      - clamav-db:/var/lib/clamav
+      - ./docker/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
+    mem_limit: 3g
     networks: [blackstore-network]
     restart: unless-stopped

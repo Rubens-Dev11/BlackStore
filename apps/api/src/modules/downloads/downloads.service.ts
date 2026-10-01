@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, GoneException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, GoneException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/prisma';
 import { FileStorageService } from '../file-storage/file-storage.service';
 import { Request } from 'express';
@@ -32,6 +32,15 @@ export class DownloadsService {
 
     if (downloadToken.downloadCount >= downloadToken.maxDownloads) {
       throw new ForbiddenException('Quota de téléchargements atteint');
+    }
+
+    // Fichier d'un vendeur : servi seulement après l'antivirus (un fichier remplacé est réanalysé).
+    const product = downloadToken.orderItem.product;
+    if (!product.filePath) {
+      throw new NotFoundException('Fichier indisponible');
+    }
+    if (product.storeId && product.scanStatus !== 'clean') {
+      throw new ConflictException('Ce fichier est en cours de vérification. Réessayez dans quelques minutes.');
     }
 
     const ipHash = crypto.createHash('sha256').update(req.ip || '').digest('hex');

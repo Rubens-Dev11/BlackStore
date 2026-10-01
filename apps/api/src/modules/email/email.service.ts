@@ -257,4 +257,62 @@ export class EmailService {
       }),
     );
   }
+
+  /** Décision de l'administrateur sur un produit soumis par un vendeur. */
+  async sendSellerProductReview(
+    to: string,
+    firstName: string,
+    productName: string,
+    decision: 'approved' | 'rejected',
+    note?: string | null,
+  ): Promise<void> {
+    const appUrl = this.configService.get<string>('SELLER_APP_URL', 'http://localhost:3002').replace(/\/+$/, '');
+    const hello = `Bonjour ${EmailService.escapeHtml(firstName)},`;
+    const product = `« ${EmailService.escapeHtml(productName)} »`;
+    if (decision === 'approved') {
+      await this.sendSellerMail(
+        to,
+        'Votre produit est validé — BlackStore',
+        EmailService.sellerLayout({
+          lines: [
+            hello,
+            `Bonne nouvelle : votre produit ${product} est validé. Il est visible dans votre boutique dès que votre compte vendeur est validé.`,
+            'Vos prochains produits seront publiés directement, sans attendre de validation.',
+          ],
+          button: { label: 'Voir mes produits', url: `${appUrl}/vendeur/produits` },
+        }),
+      );
+      return;
+    }
+    await this.sendSellerMail(
+      to,
+      'Votre produit doit être modifié — BlackStore',
+      EmailService.sellerLayout({
+        lines: [
+          hello,
+          `Votre produit ${product} n'a pas été validé. Motif :`,
+          `<em>${EmailService.escapeHtml(note ?? '')}</em>`,
+          'Corrigez-le depuis votre espace vendeur, puis soumettez-le à nouveau.',
+        ],
+        button: { label: 'Modifier mon produit', url: `${appUrl}/vendeur/produits` },
+      }),
+    );
+  }
+
+  /** Fichier refusé par l'antivirus (il a déjà été supprimé). */
+  async sendSellerFileInfected(to: string, firstName: string, productName: string, threat: string): Promise<void> {
+    const appUrl = this.configService.get<string>('SELLER_APP_URL', 'http://localhost:3002').replace(/\/+$/, '');
+    await this.sendSellerMail(
+      to,
+      'Fichier refusé par l’antivirus — BlackStore',
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          `L'antivirus a détecté une menace (${EmailService.escapeHtml(threat)}) dans le fichier de votre produit « ${EmailService.escapeHtml(productName)} ». Le fichier a été supprimé et le produit n'est pas visible.`,
+          'Vérifiez votre fichier avec un antivirus à jour, puis envoyez une version saine depuis votre espace vendeur.',
+        ],
+        button: { label: 'Mes produits', url: `${appUrl}/vendeur/produits` },
+      }),
+    );
+  }
 }
