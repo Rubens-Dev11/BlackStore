@@ -13,6 +13,7 @@ const navItems = [
   { to: '/analytics', label: 'Analytics' },
   { to: '/vendeurs', label: 'Vendeurs' },
   { to: '/produits-a-valider', label: 'Produits à valider' },
+  { to: '/signalements', label: 'Signalements' },
   { to: '/compte', label: 'Mon compte' },
 ];
 
@@ -25,7 +26,17 @@ export function AdminLayout() {
     enabled: _hasHydrated && !!accessToken && role !== 'seller',
     refetchInterval: 60_000,
   });
-  const pendingCount = pendingProducts?.length ?? 0;
+  const { data: openReports } = useQuery({
+    queryKey: ['admin-reports', 'open'],
+    queryFn: () => api.get<unknown[]>('/admin/reports?status=open', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 60_000,
+  });
+  // Pastille du menu : ce qui attend une décision.
+  const badges: Record<string, number> = {
+    '/produits-a-valider': pendingProducts?.length ?? 0,
+    '/signalements': openReports?.length ?? 0,
+  };
 
   if (!_hasHydrated) {
     return (
@@ -57,8 +68,8 @@ export function AdminLayout() {
               }
             >
               {item.label}
-              {item.to === '/produits-a-valider' && pendingCount > 0 && (
-                <span className="ml-2 rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-semibold text-white">{pendingCount}</span>
+              {(badges[item.to] ?? 0) > 0 && (
+                <span className="ml-2 rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-semibold text-white">{badges[item.to]}</span>
               )}
             </NavLink>
           ))}

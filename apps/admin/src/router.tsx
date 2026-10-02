@@ -22,6 +22,7 @@ import { SellerStorePage } from '@/pages/seller/seller-store-page';
 import { SellerProductsPage } from '@/pages/seller/seller-products-page';
 import { SellerProductFormPage } from '@/pages/seller/seller-product-form-page';
 import { ProductReviewPage } from '@/pages/product-review-page';
+import { ReportsPage } from '@/pages/reports-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -54,6 +55,7 @@ export function AppRouter() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/vendeurs" element={<SellersPage />} />
         <Route path="/produits-a-valider" element={<ProductReviewPage />} />
+        <Route path="/signalements" element={<ReportsPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
