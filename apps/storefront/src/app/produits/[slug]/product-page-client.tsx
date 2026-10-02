@@ -21,6 +21,7 @@ import type { ProductDetail } from '@/lib/api/products';
 import { toast } from 'sonner';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { ReviewList } from '@/components/reviews/review-list';
+import { ReportProduct } from '@/components/products/report-product';
 import { fetchReviews, ReviewResponse } from '@/lib/api/reviews';
 
 const PLATFORM_ICON = {
@@ -278,6 +279,11 @@ export function ProductPageClient({ product }: Props) {
               ))}
             </div>
           )}
+
+          {/* Signalement d'un problème (contenu piraté, fichier dangereux…) */}
+          <div className="pt-2">
+            <ReportProduct productId={product.id} />
+          </div>
         </div>
       </div>
 
