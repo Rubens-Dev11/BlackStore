@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { notify } from '@/lib/toast';
-import type { SellerProfile, SellerStatus } from '@/lib/seller-api';
+import { IDENTITY_STATUS_LABELS, TONE_CLASSES, type SellerProfile, type SellerStatus } from '@/lib/seller-api';
 import { useAuthStore } from '@/stores/use-auth-store';
 
 const STATUS_LABELS: Record<SellerStatus, { label: string; className: string }> = {
@@ -97,6 +97,7 @@ export function SellersPage() {
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Téléphone</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">E-mail confirmé</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Statut</th>
+                <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Identité</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Inscrit le</th>
                 <th className="py-3 px-4 text-left text-xs font-semibold uppercase text-muted-foreground">Actions</th>
               </tr>
@@ -125,6 +126,12 @@ export function SellersPage() {
                     <td className="py-3 px-4 text-xs">{seller.emailVerifiedAt ? 'Oui' : 'Non'}</td>
                     <td className="py-3 px-4">
                       <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>{status.label}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {(() => {
+                        const identity = IDENTITY_STATUS_LABELS[seller.identityChecks[0]?.status ?? 'none'];
+                        return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${TONE_CLASSES[identity.tone]}`}>{identity.label}</span>;
+                      })()}
                     </td>
                     <td className="whitespace-nowrap py-3 px-4 text-xs text-muted-foreground">{formatDate(seller.createdAt)}</td>
                     <td className="py-3 px-4">

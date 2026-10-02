@@ -14,6 +14,7 @@ const navItems = [
   { to: '/vendeurs', label: 'Vendeurs' },
   { to: '/produits-a-valider', label: 'Produits à valider' },
   { to: '/signalements', label: 'Signalements' },
+  { to: '/identites', label: 'Identités' },
   { to: '/compte', label: 'Mon compte' },
 ];
 
@@ -32,10 +33,17 @@ export function AdminLayout() {
     enabled: _hasHydrated && !!accessToken && role !== 'seller',
     refetchInterval: 60_000,
   });
+  const { data: pendingIdentities } = useQuery({
+    queryKey: ['admin-identity-checks', 'pending'],
+    queryFn: () => api.get<unknown[]>('/admin/identity-checks?status=pending', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 60_000,
+  });
   // Pastille du menu : ce qui attend une décision.
   const badges: Record<string, number> = {
     '/produits-a-valider': pendingProducts?.length ?? 0,
     '/signalements': openReports?.length ?? 0,
+    '/identites': pendingIdentities?.length ?? 0,
   };
 
   if (!_hasHydrated) {

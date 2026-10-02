@@ -23,6 +23,8 @@ import { SellerProductsPage } from '@/pages/seller/seller-products-page';
 import { SellerProductFormPage } from '@/pages/seller/seller-product-form-page';
 import { ProductReviewPage } from '@/pages/product-review-page';
 import { ReportsPage } from '@/pages/reports-page';
+import { IdentityChecksPage } from '@/pages/identity-checks-page';
+import { SellerIdentityPage } from '@/pages/seller/seller-identity-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -41,6 +43,7 @@ export function AppRouter() {
         <Route path="/vendeur/produits" element={<SellerProductsPage />} />
         <Route path="/vendeur/produits/nouveau" element={<SellerProductFormPage />} />
         <Route path="/vendeur/produits/:id" element={<SellerProductFormPage />} />
+        <Route path="/vendeur/identite" element={<SellerIdentityPage />} />
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
       </Route>
       <Route element={<AdminLayout />}>
@@ -56,6 +59,7 @@ export function AppRouter() {
         <Route path="/vendeurs" element={<SellersPage />} />
         <Route path="/produits-a-valider" element={<ProductReviewPage />} />
         <Route path="/signalements" element={<ReportsPage />} />
+        <Route path="/identites" element={<IdentityChecksPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

@@ -21,6 +21,13 @@ const STATUS_BANNERS: Record<SellerStatus, { className: string; text: string }> 
 
 const COMING_STEPS = ['Suivre vos ventes et retirer vos gains par Mobile Money'];
 
+const IDENTITY_STEP: Record<string, string> = {
+  none: 'à faire avant votre premier retrait',
+  pending: 'documents en cours de vérification',
+  approved: 'identité vérifiée',
+  rejected: 'refusée : envoyez de nouvelles photos',
+};
+
 export function SellerDashboardPage() {
   const { accessToken } = useAuthStore();
   const { data: me, isLoading, isError } = useQuery({
@@ -60,6 +67,12 @@ export function SellerDashboardPage() {
             ) : (
               <>Ajouter vos produits numériques <span className="text-muted-foreground">(après la création de la boutique)</span></>
             )}
+          </li>
+          <li>
+            <Link to="/vendeur/identite" className="font-medium text-primary hover:underline">
+              Vérifier votre identité
+            </Link>{' '}
+            <span className="text-muted-foreground">({IDENTITY_STEP[me.identityChecks?.[0]?.status ?? 'none']})</span>
           </li>
           {COMING_STEPS.map((step) => (
             <li key={step}>

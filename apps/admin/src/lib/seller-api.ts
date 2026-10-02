@@ -14,7 +14,32 @@ export interface SellerProfile {
   lastLogin: string | null;
   createdAt: string;
   store: { name: string; slug: string } | null;
+  /** Dernière vérification d'identité (vide si le vendeur n'a rien envoyé). */
+  identityChecks: { status: IdentityCheckStatus; reviewedAt: string | null }[];
 }
+
+export type IdentityCheckStatus = 'pending' | 'approved' | 'rejected';
+export type IdentityDocumentType = 'cni' | 'passport';
+
+/** État de la vérification d'identité, vu par le vendeur. */
+export interface SellerIdentity {
+  status: IdentityCheckStatus | 'none';
+  documentType: IdentityDocumentType | null;
+  fullName: string | null;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+}
+
+export const IDENTITY_STATUS_LABELS: Record<IdentityCheckStatus | 'none', { label: string; tone: 'gray' | 'yellow' | 'green' | 'red' }> = {
+  none: { label: 'Non envoyée', tone: 'gray' },
+  pending: { label: 'À vérifier', tone: 'yellow' },
+  approved: { label: 'Vérifiée', tone: 'green' },
+  rejected: { label: 'Refusée', tone: 'red' },
+};
+
+/** Photos de la pièce et selfie : 8 Mo au plus chacune (même limite que l'API). */
+export const IDENTITY_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 
 export interface SellerStore {
   id: string;
