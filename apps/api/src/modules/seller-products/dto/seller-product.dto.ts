@@ -85,7 +85,8 @@ export class UpdateSellerProductDto extends PartialType(CreateSellerProductDto) 
 
 export class SubmitSellerProductDto {
   @ApiProperty({ description: 'Le vendeur certifie détenir les droits de vente du produit' })
-  @IsBoolean()
+  // Seul un vrai booléen « true » vaut certification (la conversion automatique ferait de « false » un vrai).
+  @Transform(({ obj }) => obj.certifyRights === true)
   @Equals(true, { message: 'Vous devez certifier détenir les droits de vente de ce produit' })
   certifyRights!: boolean;
 }

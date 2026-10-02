@@ -315,4 +315,34 @@ export class EmailService {
       }),
     );
   }
+
+  /** Résultat de la vérification d'identité d'un vendeur. */
+  async sendSellerIdentityReview(to: string, firstName: string, decision: 'approved' | 'rejected', note?: string | null): Promise<void> {
+    const appUrl = this.configService.get<string>('SELLER_APP_URL', 'http://localhost:3002').replace(/\/+$/, '');
+    const hello = `Bonjour ${EmailService.escapeHtml(firstName)},`;
+    if (decision === 'approved') {
+      await this.sendSellerMail(
+        to,
+        'Votre identité est vérifiée — BlackStore',
+        EmailService.sellerLayout({
+          lines: [hello, 'Votre identité est vérifiée : vous pourrez retirer vos gains vers Mobile Money.'],
+          button: { label: 'Accéder à mon espace vendeur', url: `${appUrl}/vendeur` },
+        }),
+      );
+      return;
+    }
+    await this.sendSellerMail(
+      to,
+      'Vérification d’identité à refaire — BlackStore',
+      EmailService.sellerLayout({
+        lines: [
+          hello,
+          'Nous n’avons pas pu vérifier votre identité. Motif :',
+          `<em>${EmailService.escapeHtml(note ?? '')}</em>`,
+          'Vos photos ont été effacées. Envoyez de nouvelles photos depuis votre espace vendeur.',
+        ],
+        button: { label: 'Refaire ma vérification', url: `${appUrl}/vendeur/identite` },
+      }),
+    );
+  }
 }

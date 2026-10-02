@@ -271,10 +271,44 @@ model Seller {
   lastLogin       DateTime?                            @map("last_login")
   tokens          SellerToken[]
   store           Store?
+  identityChecks  IdentityCheck[]
   createdAt       DateTime      @default(now())        @map("created_at")
   updatedAt       DateTime      @updatedAt             @map("updated_at")
 
   @@map("sellers")
+}
+
+// Vérification d'identité d'un vendeur (selfie et CNI ou passeport), contrôlée par l'administrateur
+// avant le premier retrait. Un nouvel envoi après un refus crée une nouvelle vérification.
+model IdentityCheck {
+  id               String               @id @default(uuid())
+  sellerId         String                                @map("seller_id")
+  seller           Seller               @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  documentType     IdentityDocumentType                  @map("document_type")
+  fullName         String               @db.VarChar(160) @map("full_name") // nom tel qu'écrit sur la pièce
+  // Photos privées dans MinIO (dossier identity/) ; effacées dès qu'une vérification est refusée.
+  documentFrontKey String?              @db.VarChar(255) @map("document_front_key")
+  documentBackKey  String?              @db.VarChar(255) @map("document_back_key")
+  selfieKey        String?              @db.VarChar(255) @map("selfie_key")
+  status           IdentityCheckStatus  @default(pending)
+  reviewNote       String?              @db.VarChar(500) @map("review_note") // motif d'un refus
+  reviewedAt       DateTime?                             @map("reviewed_at")
+  createdAt        DateTime             @default(now())  @map("created_at")
+
+  @@index([sellerId])
+  @@index([status])
+  @@map("identity_checks")
+}
+
+enum IdentityDocumentType {
+  cni      // carte nationale d'identité : recto et verso
+  passport // page d'identité
+}
+
+enum IdentityCheckStatus {
+  pending
+  approved
+  rejected
 }
 
 enum SellerTokenType {

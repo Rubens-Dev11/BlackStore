@@ -38,6 +38,8 @@ const SELLER_PROFILE = {
   lastLogin: true,
   createdAt: true,
   store: { select: { name: true, slug: true } },
+  // Dernière vérification d'identité (obligatoire avant le premier retrait).
+  identityChecks: { orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, reviewedAt: true } },
 } satisfies Prisma.SellerSelect;
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');

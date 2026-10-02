@@ -119,6 +119,11 @@ export class FileStorageService implements OnModuleInit {
     return { objectKey, sha256: hash.digest('hex'), sizeBytes };
   }
 
+  /** Image privée (pièce d'identité…) : lisible seulement par un lien signé de courte durée. */
+  async uploadPrivateImage(buffer: Buffer, objectKey: string, mimeType: string): Promise<void> {
+    await this.minioClient.putObject(this.bucketName, objectKey, buffer, buffer.length, { 'Content-Type': mimeType });
+  }
+
   /** Lecture en flux d'un fichier stocké (analyse antivirus). */
   async getObjectStream(objectKey: string): Promise<Readable> {
     return this.minioClient.getObject(this.bucketName, objectKey);
