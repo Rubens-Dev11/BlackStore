@@ -12,5 +12,7 @@ import { SellerProductsService } from './seller-products.service';
   imports: [AntivirusModule, EmailModule, FileStorageModule, ProductsModule],
   controllers: [SellerProductsController, AdminProductReviewController],
   providers: [SellerProductsService, AdminProductReviewService],
+  // Les signalements retirent un produit de vendeur par la même décision que la validation.
+  exports: [AdminProductReviewService],
 })
 export class SellerProductsModule {}

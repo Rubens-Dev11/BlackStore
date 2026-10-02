@@ -73,6 +73,7 @@ model Product {
   orderItems          OrderItem[]
   reviews             Review[]
   pageViews           PageView[]
+  reports             ProductReport[]
   // Boutique du vendeur ; vide pour les produits de BlackStore. Une boutique
   // qui a des produits ne peut pas être supprimée.
   storeId             String?                        @map("store_id")
@@ -106,6 +107,40 @@ enum FileScanStatus {
   clean
   infected // fichier supprimé
   failed   // analyse impossible après plusieurs essais
+}
+
+// Signalement d'un produit par un visiteur, traité par l'administrateur.
+model ProductReport {
+  id             String       @id @default(uuid())
+  productId      String                            @map("product_id")
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reason         ReportReason
+  details        String?      @db.VarChar(1000)
+  reporterEmail  String?      @db.VarChar(150)     @map("reporter_email") // facultatif, pour recontacter
+  ipHash         String?      @db.VarChar(64)      @map("ip_hash")        // évite les doublons d'un même visiteur
+  status         ReportStatus @default(open)
+  resolutionNote String?      @db.VarChar(500)     @map("resolution_note") // décision de l'administrateur
+  resolvedAt     DateTime?                         @map("resolved_at")
+  createdAt      DateTime     @default(now())      @map("created_at")
+
+  @@index([status])
+  @@index([productId])
+  @@map("product_reports")
+}
+
+enum ReportReason {
+  piracy  // copie piratée, droits non détenus
+  malware // fichier dangereux
+  scam    // arnaque, produit trompeur
+  illegal // contenu illégal, haineux ou choquant
+  broken  // fichier vide ou qui ne fonctionne pas
+  other
+}
+
+enum ReportStatus {
+  open
+  resolved  // produit retiré
+  dismissed // classé sans suite
 }
 
 // ─────────────────────────────────────────────

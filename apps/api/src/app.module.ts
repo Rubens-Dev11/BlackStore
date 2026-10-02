@@ -19,6 +19,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { StoresModule } from './modules/stores/stores.module';
 import { SellerProductsModule } from './modules/seller-products/seller-products.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { SellerProductsModule } from './modules/seller-products/seller-products.
     SellersModule,
     StoresModule,
     SellerProductsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
