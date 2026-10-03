@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   ShoppingCart,
@@ -22,6 +21,9 @@ import { toast } from 'sonner';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { ReviewList } from '@/components/reviews/review-list';
 import { ReportProduct } from '@/components/products/report-product';
+import { ProductMedia } from '@/components/products/product-media';
+import { YouTubePlayer } from '@/components/products/youtube-player';
+import { youTubeId } from '@/lib/youtube';
 import { fetchReviews, ReviewResponse } from '@/lib/api/reviews';
 
 const PLATFORM_ICON = {
@@ -60,6 +62,8 @@ export function ProductPageClient({ product }: Props) {
     trackPageView(product.id);
     loadReviews();
   }, [product.id]);
+
+  const installVideoId = youTubeId(product.installVideoUrl);
 
   const hasDiscount =
     product.originalPrice !== null && product.originalPrice > product.price;
@@ -103,52 +107,13 @@ export function ProductPageClient({ product }: Props) {
 
       {/* Grille principale */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* Colonne gauche — Image */}
-        <div>
-          <div className="relative w-full overflow-hidden rounded-xl bg-zinc-800 animate-fade-in md:aspect-video h-[400px] md:h-auto">
-            {product.coverImageUrl ? (
-              <Image
-                src={product.coverImageUrl}
-                alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-6xl text-zinc-600">
-                📦
-              </div>
-            )}
-          </div>
-
-          {/* Screenshots miniatures */}
-          {product.screenshots.length > 0 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 animate-fade-in" style={{ animationDelay: '0.25s' }}>
-              {product.screenshots.map((url, i) => {
-                // Handle screenshot URL: if it's already an absolute URL, use it; otherwise skip
-                const screenshotUrl = url.startsWith('http') ? url : null;
-
-                if (!screenshotUrl) {
-                  return null; // Skip invalid URLs
-                }
-
-                return (
-                  <div
-                    key={i}
-                    className="relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-800"
-                  >
-                    <img
-                      src={screenshotUrl}
-                      alt={`Screenshot ${i + 1}`}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* Colonne gauche — vidéo de présentation, couverture et captures */}
+        <ProductMedia
+          name={product.name}
+          coverImageUrl={product.coverImageUrl}
+          screenshots={product.screenshots}
+          demoVideoUrl={product.demoVideoUrl}
+        />
 
         {/* Colonne droite — Infos + CTA */}
         <div className="flex flex-col gap-4 animate-slide-in-left" style={{ animationDelay: '0.1s' }}>
@@ -314,16 +279,23 @@ export function ProductPageClient({ product }: Props) {
         </section>
       )}
 
-      {/* Guide d'installation */}
-      {product.installGuide && (
+      {/* Guide d'installation (texte et/ou vidéo) */}
+      {(product.installGuide || installVideoId) && (
         <section className="mt-8">
           <h2 className="mb-3 text-xl font-semibold text-white">
             Guide d&apos;installation
           </h2>
-          <div
-            className="prose prose-invert max-w-none text-zinc-400"
-            dangerouslySetInnerHTML={{ __html: product.installGuide }}
-          />
+          {installVideoId && (
+            <div className="relative mb-4 aspect-video w-full max-w-2xl overflow-hidden rounded-xl bg-zinc-900">
+              <YouTubePlayer videoId={installVideoId} title={`${product.name} — installation`} label="Vidéo d'installation" />
+            </div>
+          )}
+          {product.installGuide && (
+            <div
+              className="prose prose-invert max-w-none text-zinc-400"
+              dangerouslySetInnerHTML={{ __html: product.installGuide }}
+            />
+          )}
         </section>
       )}
 

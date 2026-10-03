@@ -30,8 +30,10 @@ export interface ProductSummary {
 export interface ProductDetail extends ProductSummary {
   description: string | null;
   screenshots: string[];
+  /** Vidéo de présentation YouTube (lien youtube.com/watch?v=…), affichée en tête de la galerie. */
   demoVideoUrl: string | null;
   installGuide: string | null;
+  installVideoUrl: string | null;
   tags: string[];
   version: string | null;
   fileSizeMb: number | null;
