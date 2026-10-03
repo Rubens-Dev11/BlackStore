@@ -13,7 +13,9 @@ import {
   TONE_CLASSES,
   type ProductPlatform,
   type SellerProduct,
+  type WalletSummary,
 } from '@/lib/seller-api';
+import { YOUTUBE_URL_MESSAGE, youTubeId, youTubeThumbnail, youTubeWatchUrl } from '@/lib/youtube';
 import { sellerProductSchema } from '@/lib/validations';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { apiErrorMessage, BUTTON_CLASS, FormField, INPUT_CLASS } from '@/components/form-field';
@@ -32,6 +34,7 @@ const EMPTY_FORM = {
   originalPrice: '',
   version: '',
   tags: '',
+  demoVideoUrl: '',
 };
 type ProductForm = typeof EMPTY_FORM;
 
@@ -46,6 +49,7 @@ const toForm = (p: SellerProduct): ProductForm => ({
   originalPrice: p.originalPrice !== null ? String(p.originalPrice) : '',
   version: p.version ?? '',
   tags: p.tags.join(', '),
+  demoVideoUrl: p.demoVideoUrl ?? '',
 });
 
 /** Formulaire → données envoyées à l'API (validées comme côté serveur). */
@@ -64,6 +68,7 @@ function toPayload(form: ProductForm) {
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean),
+    demoVideoUrl: form.demoVideoUrl,
   });
 }
 
@@ -98,6 +103,11 @@ export function SellerProductFormPage() {
     queryKey: ['categories'],
     queryFn: () => api.get<CategoryWithCount[]>('/categories', accessToken),
   });
+  // Taux de commission en vigueur, rappelé sous le prix.
+  const { data: wallet } = useQuery({
+    queryKey: ['seller-wallet'],
+    queryFn: () => api.get<WalletSummary>('/seller/wallet', accessToken),
+  });
 
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -119,6 +129,8 @@ export function SellerProductFormPage() {
 
   const set = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }));
+
+  const videoId = youTubeId(form.demoVideoUrl);
 
   const store = (updated: SellerProduct) => {
     queryClient.setQueryData(['seller-product', updated.id], updated);
@@ -302,12 +314,37 @@ export function SellerProductFormPage() {
         )}
         {!form.isFree && (
           <p className="text-xs text-muted-foreground">
-            100 FCFA minimum, multiple de 5. BlackStore prélève une commission de 10 % sur chaque vente.
+            100 FCFA minimum, multiple de 5. BlackStore prélève une commission de {wallet?.settings.commissionRate ?? 10} % sur chaque
+            vente.
           </p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Version (facultatif)" id="version" value={form.version} onChange={set('version')} maxLength={20} placeholder="Ex. : 2.1" />
           <FormField label="Mots-clés (facultatif, séparés par des virgules)" id="tags" value={form.tags} onChange={set('tags')} placeholder="canva, modèles, commerce" />
+        </div>
+        <div>
+          <label htmlFor="demoVideoUrl" className="mb-1 block text-sm font-medium">Vidéo de présentation (facultatif)</label>
+          <input
+            id="demoVideoUrl"
+            type="url"
+            inputMode="url"
+            value={form.demoVideoUrl}
+            onChange={set('demoVideoUrl')}
+            className={INPUT_CLASS}
+            placeholder="https://youtu.be/…"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Une courte vidéo qui montre votre produit (motion design, démonstration), publiée sur YouTube en « Public » ou « Non
+            répertoriée ». Elle s'affiche en premier sur la fiche du produit, comme sur le Play Store.
+          </p>
+          {videoId ? (
+            <a href={youTubeWatchUrl(videoId)} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-3 text-xs text-primary hover:underline">
+              <img src={youTubeThumbnail(videoId)} alt="Aperçu de la vidéo" className="h-16 w-28 rounded-md border object-cover" />
+              Voir la vidéo sur YouTube
+            </a>
+          ) : (
+            form.demoVideoUrl.trim() !== '' && <p className="mt-1 text-xs text-red-600">{YOUTUBE_URL_MESSAGE}</p>
+          )}
         </div>
         <button type="submit" disabled={saving} className={BUTTON_CLASS}>
           {saving ? 'Enregistrement...' : isNew ? 'Créer le brouillon' : 'Enregistrer'}

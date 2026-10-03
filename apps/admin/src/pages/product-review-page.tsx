@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatFcfa } from '@/lib/format';
+import { youTubeId, youTubeThumbnail, youTubeWatchUrl } from '@/lib/youtube';
 import { notify } from '@/lib/toast';
 import {
   PLATFORM_LABELS,
@@ -26,6 +27,7 @@ interface ReviewProduct {
   platform: ProductPlatform;
   version: string | null;
   tags: string[];
+  demoVideoUrl: string | null;
   coverUrl: string | null;
   screenshotUrls: string[];
   file: { name: string; sizeMb: number | null; sha256: string | null } | null;
@@ -183,6 +185,17 @@ export function ProductReviewPage() {
                 </details>
               )}
               {p.tags.length > 0 && <p className="text-xs text-muted-foreground">Mots-clés : {p.tags.join(', ')}</p>}
+              {youTubeId(p.demoVideoUrl) && (
+                <a
+                  href={youTubeWatchUrl(youTubeId(p.demoVideoUrl)!)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-3 text-sm text-primary hover:underline"
+                >
+                  <img src={youTubeThumbnail(youTubeId(p.demoVideoUrl)!)} alt="" className="h-16 w-28 rounded-md border object-cover" />
+                  Vidéo de présentation : à regarder sur YouTube avant de valider
+                </a>
+              )}
               {p.screenshotUrls.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {p.screenshotUrls.map((url, i) => (

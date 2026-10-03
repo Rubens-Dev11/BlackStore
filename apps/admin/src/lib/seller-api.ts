@@ -133,6 +133,8 @@ export interface SellerProduct {
   platform: ProductPlatform;
   version: string | null;
   tags: string[];
+  /** Vidéo de présentation YouTube, affichée en tête de la fiche (comme sur le Play Store). */
+  demoVideoUrl: string | null;
   coverUrl: string | null;
   screenshotUrls: string[];
   file: { name: string; sizeMb: number | null } | null;

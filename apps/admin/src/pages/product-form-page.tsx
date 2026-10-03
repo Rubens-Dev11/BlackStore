@@ -130,6 +130,32 @@ function formToCreatePayload(f: ProductFormData) {
     downloadExpiryHours: parseInt(f.downloadExpiryHours, 10) || 72,
     isFeatured: f.isFeatured,
     platform: f.platform,
+    ...detailFields(f, undefined),
+  };
+}
+
+/** Tags saisis « a, b, c » → liste. */
+const splitTags = (value: string) =>
+  value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+/**
+ * Champs de la fiche (accroche, prix barré, vidéos, guide, SEO, tags). Un champ vide vaut `empty` :
+ * absent à la création, null (effacé) à la modification.
+ */
+function detailFields(f: ProductFormData, empty: undefined | null) {
+  const text = (value: string) => value.trim() || empty;
+  return {
+    shortDescription: text(f.shortDescription),
+    originalPrice: f.originalPrice.trim() ? parseInt(f.originalPrice, 10) : empty,
+    tags: splitTags(f.tags),
+    installGuide: text(f.installGuide),
+    demoVideoUrl: text(f.demoVideoUrl),
+    installVideoUrl: text(f.installVideoUrl),
+    seoTitle: text(f.seoTitle),
+    seoDescription: text(f.seoDescription),
   };
 }
 
@@ -154,6 +180,7 @@ function formToUpdatePayload(f: ProductFormData) {
     isFeatured: f.isFeatured,
     isActive: f.isActive,
     ...(f.platform && { platform: f.platform }),
+    ...detailFields(f, null),
   };
 }
 
@@ -162,6 +189,8 @@ function formToUpdatePayload(f: ProductFormData) {
 // ─────────────────────────────────────────────
 
 import { productSchema } from '@/lib/validations';
+import { apiErrorMessage } from '@/components/form-field';
+import { YOUTUBE_URL_MESSAGE, youTubeId, youTubeThumbnail } from '@/lib/youtube';
 
 function slugify(text: string) {
   return text.toLowerCase()
@@ -227,8 +256,8 @@ export function ProductFormPage() {
       navigate(`/produits/${created.id}/modifier`);
       notify.success('Produit créé');
     },
-    onError: (_err: unknown) => {
-      notify.error('Erreur lors de la création');
+    onError: (err: unknown) => {
+      notify.error(`Création impossible : ${apiErrorMessage(err)}`);
     },
   });
 
@@ -241,8 +270,8 @@ export function ProductFormPage() {
       navigate('/produits');
       notify.success('Produit mis à jour');
     },
-    onError: (_err: unknown) => {
-      notify.error('Erreur lors de la modification');
+    onError: (err: unknown) => {
+      notify.error(`Modification impossible : ${apiErrorMessage(err)}`);
     },
   });
 
@@ -393,6 +422,10 @@ export function ProductFormPage() {
 
     if (!result.success) {
       setErrorMsg(result.error.issues[0].message);
+      return;
+    }
+    if ([form.demoVideoUrl, form.installVideoUrl].some((url) => url.trim() !== '' && !youTubeId(url))) {
+      setErrorMsg(YOUTUBE_URL_MESSAGE);
       return;
     }
 
@@ -592,15 +625,23 @@ export function ProductFormPage() {
           </p>
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium">URL vidéo démo</label>
+            <label className="mb-1 block text-sm font-medium">Vidéo de présentation (lien YouTube)</label>
             <input
               name="demoVideoUrl"
               type="url"
               value={form.demoVideoUrl}
               onChange={handleChange}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-              placeholder="https://youtube.com/watch?v=..."
+              placeholder="https://youtu.be/..."
             />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Vidéo en motion design ou démonstration, affichée en premier dans la galerie de la fiche, comme sur le Play Store.
+            </p>
+            {youTubeId(form.demoVideoUrl) ? (
+              <img src={youTubeThumbnail(youTubeId(form.demoVideoUrl)!)} alt="Aperçu de la vidéo" className="mt-2 h-16 w-28 rounded-md border object-cover" />
+            ) : (
+              form.demoVideoUrl.trim() !== '' && <p className="mt-1 text-xs text-red-600">{YOUTUBE_URL_MESSAGE}</p>
+            )}
           </div>
         </fieldset>
 
@@ -612,13 +653,13 @@ export function ProductFormPage() {
             <label className="mb-1 block text-sm font-medium">Chemin du fichier (MinIO)</label>
             <input
               name="filePath"
-              value={form.filePath}
-              onChange={handleChange}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-primary"
-              placeholder="products/mon-app-v1.apk"
+              value={displayFilePath ?? form.filePath}
+              readOnly
+              className="w-full rounded-md border bg-muted px-3 py-2 text-sm font-mono text-muted-foreground outline-none"
+              placeholder="Aucun fichier envoyé"
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Chemin relatif dans le bucket MinIO <code>blackstore</code>
+              Rempli automatiquement à l'envoi du fichier (section « Upload fichiers » plus bas).
             </p>
           </div>
 
@@ -637,13 +678,11 @@ export function ProductFormPage() {
               <label className="mb-1 block text-sm font-medium">Taille (Mo)</label>
               <input
                 name="fileSizeMb"
-                type="number"
-                min="0"
-                step="0.1"
                 value={form.fileSizeMb}
-                onChange={handleChange}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-                placeholder="45.5"
+                readOnly
+                title="Calculée automatiquement à l'envoi du fichier"
+                className="w-full rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground outline-none"
+                placeholder="Automatique"
               />
             </div>
             <div>
@@ -690,15 +729,18 @@ export function ProductFormPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">URL vidéo d'installation</label>
+            <label className="mb-1 block text-sm font-medium">Vidéo d'installation (lien YouTube)</label>
             <input
               name="installVideoUrl"
               type="url"
               value={form.installVideoUrl}
               onChange={handleChange}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-              placeholder="https://youtube.com/watch?v=..."
+              placeholder="https://youtu.be/..."
             />
+            {form.installVideoUrl.trim() !== '' && !youTubeId(form.installVideoUrl) && (
+              <p className="mt-1 text-xs text-red-600">{YOUTUBE_URL_MESSAGE}</p>
+            )}
           </div>
         </fieldset>
 

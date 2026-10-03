@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { YOUTUBE_URL_MESSAGE, youTubeId } from './youtube';
 
 export const productSchema = z.object({
   name: z.string().min(2, 'Nom requis (min 2 caractères)'),
@@ -128,6 +129,7 @@ export const sellerProductSchema = z
     originalPrice: z.number().int('Le prix barré doit être un nombre entier de FCFA').max(1_000_000).nullable(),
     version: z.string().trim().max(20, 'La version doit faire au plus 20 caractères'),
     tags: z.array(z.string().max(30, 'Chaque mot-clé doit faire au plus 30 caractères')).max(8, '8 mots-clés au maximum'),
+    demoVideoUrl: z.string().trim().refine((v) => v === '' || youTubeId(v) !== null, YOUTUBE_URL_MESSAGE),
   })
   .refine((v) => v.originalPrice === null || v.originalPrice > v.price, {
     message: 'Le prix barré doit être supérieur au prix de vente',
