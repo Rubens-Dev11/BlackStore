@@ -16,6 +16,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { EmptyToNull, Trim } from '../../sellers/dto/seller-fields';
+import { YouTubeVideoUrl } from '../../products/youtube';
 
 export const SELLER_PRICE_MAX = 1_000_000;
 
@@ -79,6 +80,13 @@ export class CreateSellerProductDto {
   @IsString({ each: true })
   @MaxLength(30, { each: true, message: 'Chaque mot-clé doit faire au plus 30 caractères' })
   tags?: string[];
+
+  @ApiPropertyOptional({
+    example: 'https://youtu.be/dQw4w9WgXcQ',
+    description: 'Vidéo de présentation sur YouTube (motion design, démonstration), affichée en tête de la fiche ; chaîne vide pour la retirer',
+  })
+  @YouTubeVideoUrl()
+  demoVideoUrl?: string | null;
 }
 
 export class UpdateSellerProductDto extends PartialType(CreateSellerProductDto) {}

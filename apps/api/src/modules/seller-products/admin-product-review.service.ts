@@ -149,6 +149,7 @@ export class AdminProductReviewService {
       platform: product.platform,
       version: product.version,
       tags: product.tags,
+      demoVideoUrl: product.demoVideoUrl,
       coverUrl: product.coverImageUrl ? await this.sign(product.coverImageUrl) : null,
       screenshotUrls: await Promise.all(product.screenshots.map((key) => this.sign(key))),
       file: product.filePath

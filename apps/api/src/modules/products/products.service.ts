@@ -226,6 +226,7 @@ export class ProductsService {
         screenshots: true,
         demoVideoUrl: true,
         installGuide: true,
+        installVideoUrl: true,
         price: true,
         originalPrice: true,
         platform: true,
@@ -293,6 +294,14 @@ export class ProductsService {
         downloadExpiryHours: createProductDto.downloadExpiryHours || 72,
         isFeatured: createProductDto.isFeatured || false,
         platform: createProductDto.platform || Platform.android,
+        shortDescription: createProductDto.shortDescription ?? null,
+        originalPrice: createProductDto.originalPrice ?? null,
+        tags: createProductDto.tags ?? [],
+        installGuide: createProductDto.installGuide ?? null,
+        demoVideoUrl: createProductDto.demoVideoUrl ?? null,
+        installVideoUrl: createProductDto.installVideoUrl ?? null,
+        seoTitle: createProductDto.seoTitle ?? null,
+        seoDescription: createProductDto.seoDescription ?? null,
       },
     });
   }
@@ -319,6 +328,15 @@ export class ProductsService {
         isFeatured: updateProductDto.isFeatured,
         isActive: updateProductDto.isActive,
         ...(updateProductDto.platform !== undefined && { platform: updateProductDto.platform }),
+        // undefined : inchangé ; null : effacé.
+        shortDescription: updateProductDto.shortDescription,
+        originalPrice: updateProductDto.originalPrice,
+        tags: updateProductDto.tags,
+        installGuide: updateProductDto.installGuide,
+        demoVideoUrl: updateProductDto.demoVideoUrl,
+        installVideoUrl: updateProductDto.installVideoUrl,
+        seoTitle: updateProductDto.seoTitle,
+        seoDescription: updateProductDto.seoDescription,
       },
     });
   }

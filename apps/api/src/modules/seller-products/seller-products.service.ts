@@ -80,6 +80,7 @@ export class SellerProductsService {
           platform: dto.platform ?? 'multiplatform',
           version: dto.version ?? null,
           tags: dto.tags ?? [],
+          demoVideoUrl: dto.demoVideoUrl ?? null,
           storeId: store.id,
           reviewStatus: 'draft',
           isActive: false,
@@ -111,6 +112,7 @@ export class SellerProductsService {
       platform: dto.platform,
       version: dto.version,
       tags: dto.tags,
+      demoVideoUrl: dto.demoVideoUrl,
     };
 
     // L'adresse suit le nom tant que le produit n'a jamais été publié ; ensuite elle ne bouge plus
@@ -382,6 +384,7 @@ export class SellerProductsService {
       platform: product.platform,
       version: product.version,
       tags: product.tags,
+      demoVideoUrl: product.demoVideoUrl,
       coverUrl: product.coverImageUrl ? await this.sign(product.coverImageUrl) : null,
       screenshotUrls: await Promise.all(product.screenshots.map((key) => this.sign(key))),
       file: product.filePath
