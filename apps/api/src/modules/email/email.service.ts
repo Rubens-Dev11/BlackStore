@@ -345,4 +345,73 @@ export class EmailService {
       }),
     );
   }
+
+  // ── Portefeuille des vendeurs ───────────────────────────────────────
+
+  private static fcfa(amount: number): string {
+    return `${amount.toLocaleString('fr-FR')} FCFA`;
+  }
+
+  private sellerAppUrl(): string {
+    return this.configService.get<string>('SELLER_APP_URL', 'http://localhost:3002').replace(/\/+$/, '');
+  }
+
+  /** Nouvelle vente : montant crédité (commission déduite) et date à laquelle il devient retirable. */
+  async sendSellerSale(to: string, firstName: string, productName: string, amount: number, availableAt: Date): Promise<void> {
+    const date = availableAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Douala' });
+    await this.sendSellerMail(
+      to,
+      `Nouvelle vente : ${productName} — BlackStore`,
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          `Bonne nouvelle : « ${EmailService.escapeHtml(productName)} » vient d'être acheté.`,
+          `<strong>${EmailService.fcfa(amount)}</strong> ont été ajoutés à votre solde (commission BlackStore déduite). Ils seront retirables à partir du ${date}.`,
+        ],
+        button: { label: 'Voir mes gains', url: `${this.sellerAppUrl()}/vendeur/gains` },
+      }),
+    );
+  }
+
+  /** Reçu d'un retrait payé. */
+  async sendSellerWithdrawalPaid(
+    to: string,
+    firstName: string,
+    withdrawal: { id: string; amount: number; operator: string; phone: string; accountName: string; transferReference: string | null; processedAt: Date | null },
+  ): Promise<void> {
+    const operator = withdrawal.operator === 'orange' ? 'Orange Money' : 'MTN Mobile Money';
+    const date = (withdrawal.processedAt ?? new Date()).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Africa/Douala' });
+    await this.sendSellerMail(
+      to,
+      `Retrait de ${EmailService.fcfa(withdrawal.amount)} envoyé — BlackStore`,
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          `Votre retrait de <strong>${EmailService.fcfa(withdrawal.amount)}</strong> a été envoyé sur votre compte ${operator}.`,
+          `Numéro : ${EmailService.escapeHtml(withdrawal.phone)} (${EmailService.escapeHtml(withdrawal.accountName)})<br>` +
+            `Référence de la transaction : ${EmailService.escapeHtml(withdrawal.transferReference ?? '')}<br>` +
+            `Date : ${date}<br>Reçu n° ${withdrawal.id.slice(0, 8).toUpperCase()}`,
+          'Gardez cet e-mail comme reçu. Vous pouvez aussi l’imprimer depuis votre espace vendeur.',
+        ],
+        button: { label: 'Voir le reçu', url: `${this.sellerAppUrl()}/vendeur/gains/recus/${withdrawal.id}` },
+      }),
+    );
+  }
+
+  /** Retrait refusé : l'argent est revenu dans le solde. */
+  async sendSellerWithdrawalRejected(to: string, firstName: string, amount: number, note: string): Promise<void> {
+    await this.sendSellerMail(
+      to,
+      'Retrait refusé — BlackStore',
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          `Votre demande de retrait de ${EmailService.fcfa(amount)} n'a pas pu être payée. Motif :`,
+          `<em>${EmailService.escapeHtml(note)}</em>`,
+          'Le montant est revenu dans votre solde : vous pouvez faire une nouvelle demande.',
+        ],
+        button: { label: 'Voir mes gains', url: `${this.sellerAppUrl()}/vendeur/gains` },
+      }),
+    );
+  }
 }

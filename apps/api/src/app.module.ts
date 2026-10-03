@@ -21,6 +21,7 @@ import { StoresModule } from './modules/stores/stores.module';
 import { SellerProductsModule } from './modules/seller-products/seller-products.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { IdentityModule } from './modules/identity/identity.module';
     SellerProductsModule,
     ReportsModule,
     IdentityModule,
+    WalletModule,
   ],
 })
 export class AppModule {}

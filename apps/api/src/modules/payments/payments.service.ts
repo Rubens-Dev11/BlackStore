@@ -9,6 +9,7 @@ import {
 import { Prisma, Order, OrderItem, Product } from '@prisma/client';
 import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
+import { WalletService } from '../wallet/wallet.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,6 +24,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly walletService: WalletService,
   ) {}
 
   async initiatePayment(orderId: string) {
@@ -181,11 +183,13 @@ export class PaymentsService {
   }
 
   async confirmPayment(order: OrderWithItems) {
-    await this.prisma.$transaction(async (prisma: Prisma.TransactionClient) => {
+    // Commande payée et vendeurs crédités ensemble : l'un ne va jamais sans l'autre.
+    const sales = await this.prisma.$transaction(async (prisma: Prisma.TransactionClient) => {
       await prisma.order.update({
         where: { id: order.id },
         data: { status: 'paid', paidAt: new Date() },
       });
+      const credited = await this.walletService.creditPaidOrder(prisma, order.id);
 
       for (const item of order.items) {
         const tokenValue = uuidv4();
@@ -203,7 +207,10 @@ export class PaymentsService {
           },
         });
       }
+      return credited;
     });
+    // Les vendeurs sont prévenus de leurs ventes une fois le paiement enregistré.
+    this.walletService.notifySales(sales).catch((err) => this.logger.error(`Avis de vente aux vendeurs (commande ${order.id})`, err));
 
     const downloadTokens = await this.prisma.downloadToken.findMany({
       where: { orderItem: { orderId: order.id } },

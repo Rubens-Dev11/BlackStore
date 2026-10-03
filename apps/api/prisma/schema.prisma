@@ -194,6 +194,7 @@ model OrderItem {
   product         Product         @relation(fields: [productId], references: [id])
   priceAtPurchase Int                                  @map("price_at_purchase")
   downloadTokens  DownloadToken[]
+  walletEntries   WalletEntry[]
   createdAt       DateTime        @default(now())      @map("created_at")
 
   @@map("order_items")
@@ -272,6 +273,8 @@ model Seller {
   tokens          SellerToken[]
   store           Store?
   identityChecks  IdentityCheck[]
+  walletEntries   WalletEntry[]
+  withdrawals     Withdrawal[]
   createdAt       DateTime      @default(now())        @map("created_at")
   updatedAt       DateTime      @updatedAt             @map("updated_at")
 
@@ -298,6 +301,83 @@ model IdentityCheck {
   @@index([sellerId])
   @@index([status])
   @@map("identity_checks")
+}
+
+// ── Portefeuille des vendeurs ─────────────────────────────────────────
+// Le solde d'un vendeur est toujours la somme de ses mouvements, jamais un nombre modifié à la main.
+
+// Réglages de la marketplace : une seule ligne (id « default »). Un changement ne vaut que pour l'avenir :
+// chaque vente garde le taux appliqué au moment du paiement.
+model MarketplaceSettings {
+  id             String   @id @default("default")
+  commissionRate Decimal  @default(10) @db.Decimal(5, 2) @map("commission_rate") // en %
+  holdDays       Int      @default(7)                    @map("hold_days")       // délai avant qu'une vente soit retirable
+  minWithdrawal  Int      @default(5000)                 @map("min_withdrawal")  // FCFA
+  updatedAt      DateTime @updatedAt                     @map("updated_at")
+
+  @@map("marketplace_settings")
+}
+
+model WalletEntry {
+  id             String          @id @default(uuid())
+  sellerId       String                                @map("seller_id")
+  seller         Seller          @relation(fields: [sellerId], references: [id])
+  type           WalletEntryType
+  amount         Int             // FCFA pour le vendeur : positif = crédit, négatif = débit
+  grossAmount    Int?                                  @map("gross_amount")    // vente : prix payé par le client
+  commission     Int?            // vente : part de BlackStore (négative pour un remboursement)
+  commissionRate Decimal?        @db.Decimal(5, 2)     @map("commission_rate") // taux appliqué
+  availableAt    DateTime                              @map("available_at")    // retirable à partir de cette date
+  orderItemId    String?                               @map("order_item_id")
+  orderItem      OrderItem?      @relation(fields: [orderItemId], references: [id])
+  withdrawalId   String?                               @map("withdrawal_id")
+  withdrawal     Withdrawal?     @relation(fields: [withdrawalId], references: [id])
+  createdAt      DateTime        @default(now())       @map("created_at")
+
+  // Une vente ou un remboursement par article, un débit ou une restitution par retrait : jamais deux fois.
+  @@unique([orderItemId, type])
+  @@unique([withdrawalId, type])
+  @@index([sellerId, createdAt])
+  @@map("wallet_entries")
+}
+
+enum WalletEntryType {
+  sale               // vente payée, commission déduite
+  refund             // remboursement d'une vente au client
+  withdrawal         // retrait demandé
+  withdrawal_reversal // retrait refusé ou annulé : l'argent revient dans le solde
+}
+
+model Withdrawal {
+  id                String              @id @default(uuid())
+  sellerId          String                                    @map("seller_id")
+  seller            Seller              @relation(fields: [sellerId], references: [id])
+  amount            Int                 // FCFA
+  operator          MobileMoneyOperator
+  phone             String              @db.VarChar(20)       // numéro Mobile Money (+237…)
+  accountName       String              @db.VarChar(160)      @map("account_name") // titulaire du compte Mobile Money
+  status            WithdrawalStatus    @default(pending)
+  transferReference String?             @db.VarChar(100)      @map("transfer_reference") // référence de l'envoi Mobile Money
+  adminNote         String?             @db.VarChar(500)      @map("admin_note")         // motif d'un refus
+  processedAt       DateTime?                                 @map("processed_at")
+  entries           WalletEntry[]
+  createdAt         DateTime            @default(now())       @map("created_at")
+
+  @@index([sellerId])
+  @@index([status])
+  @@map("withdrawals")
+}
+
+enum MobileMoneyOperator {
+  orange // Orange Money
+  mtn    // MTN Mobile Money
+}
+
+enum WithdrawalStatus {
+  pending   // à payer par l'administrateur
+  paid      // argent envoyé
+  rejected  // refusé par l'administrateur
+  cancelled // annulé par le vendeur
 }
 
 enum IdentityDocumentType {

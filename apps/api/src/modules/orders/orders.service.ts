@@ -5,6 +5,7 @@ import { EmailService } from '../email/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PUBLIC_PRODUCT_WHERE } from '../products/product-visibility';
+import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class OrdersService {
@@ -13,6 +14,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly walletService: WalletService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
@@ -246,9 +248,14 @@ export class OrdersService {
       throw new ConflictException('Seules les commandes payées peuvent être remboursées');
     }
 
-    return await this.prisma.order.update({
-      where: { id },
-      data: { status: 'refunded' },
+    // Commande remboursée et ventes annulées chez les vendeurs, ensemble.
+    return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const refunded = await tx.order.update({
+        where: { id },
+        data: { status: 'refunded' },
+      });
+      await this.walletService.refundOrder(tx, id);
+      return refunded;
     });
   }
 
