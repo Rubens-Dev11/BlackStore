@@ -182,3 +182,70 @@ export const TONE_CLASSES: Record<'gray' | 'yellow' | 'green' | 'red' | 'blue', 
   red: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
   blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
 };
+
+// ── Portefeuille ────────────────────────────────────────────────────────
+
+export type MobileMoneyOperator = 'orange' | 'mtn';
+export type WithdrawalStatus = 'pending' | 'paid' | 'rejected' | 'cancelled';
+
+export const OPERATOR_LABELS: Record<MobileMoneyOperator, string> = {
+  orange: 'Orange Money',
+  mtn: 'MTN Mobile Money',
+};
+
+export const WITHDRAWAL_STATUS_LABELS: Record<WithdrawalStatus, { label: string; tone: 'gray' | 'yellow' | 'green' | 'red' }> = {
+  pending: { label: 'En cours de paiement', tone: 'yellow' },
+  paid: { label: 'Payé', tone: 'green' },
+  rejected: { label: 'Refusé', tone: 'red' },
+  cancelled: { label: 'Annulé', tone: 'gray' },
+};
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  operator: MobileMoneyOperator;
+  phone: string;
+  accountName: string;
+  status: WithdrawalStatus;
+  transferReference: string | null;
+  adminNote: string | null;
+  processedAt: string | null;
+  createdAt: string;
+}
+
+export interface MarketplaceSettings {
+  commissionRate: number;
+  holdDays: number;
+  minWithdrawal: number;
+  updatedAt?: string;
+}
+
+export interface WalletSummary {
+  balance: { available: number; pending: number; total: number; withdrawable: number };
+  nextRelease: { date: string } | null;
+  stats: { salesCount: number; grossSales: number; commissions: number; netEarnings: number; withdrawn: number };
+  settings: MarketplaceSettings;
+  identity: { status: IdentityCheckStatus | 'none'; fullName: string | null };
+  defaultPhone: string | null;
+  pendingWithdrawal: Withdrawal | null;
+  canWithdraw: boolean;
+  /** Ce qui empêche un retrait (null si rien). */
+  blocker: string | null;
+}
+
+export type WalletEntryType = 'sale' | 'refund' | 'withdrawal' | 'withdrawal_reversal';
+
+export interface WalletEntry {
+  id: string;
+  type: WalletEntryType;
+  amount: number;
+  grossAmount: number | null;
+  commission: number | null;
+  commissionRate: number | null;
+  availableAt: string;
+  available: boolean;
+  createdAt: string;
+  productName: string | null;
+  orderNumber: string | null;
+  withdrawal: { operator: MobileMoneyOperator; phone: string; status: WithdrawalStatus; reference: string | null } | null;
+}

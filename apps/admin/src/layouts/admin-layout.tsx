@@ -15,6 +15,8 @@ const navItems = [
   { to: '/produits-a-valider', label: 'Produits à valider' },
   { to: '/signalements', label: 'Signalements' },
   { to: '/identites', label: 'Identités' },
+  { to: '/retraits', label: 'Retraits' },
+  { to: '/reglages', label: 'Réglages' },
   { to: '/compte', label: 'Mon compte' },
 ];
 
@@ -39,11 +41,18 @@ export function AdminLayout() {
     enabled: _hasHydrated && !!accessToken && role !== 'seller',
     refetchInterval: 60_000,
   });
+  const { data: pendingWithdrawals } = useQuery({
+    queryKey: ['admin-withdrawals', 'pending'],
+    queryFn: () => api.get<unknown[]>('/admin/wallet/withdrawals?status=pending', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 60_000,
+  });
   // Pastille du menu : ce qui attend une décision.
   const badges: Record<string, number> = {
     '/produits-a-valider': pendingProducts?.length ?? 0,
     '/signalements': openReports?.length ?? 0,
     '/identites': pendingIdentities?.length ?? 0,
+    '/retraits': pendingWithdrawals?.length ?? 0,
   };
 
   if (!_hasHydrated) {

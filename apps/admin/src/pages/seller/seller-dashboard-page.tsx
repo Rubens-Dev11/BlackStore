@@ -19,8 +19,6 @@ const STATUS_BANNERS: Record<SellerStatus, { className: string; text: string }> 
   },
 };
 
-const COMING_STEPS = ['Suivre vos ventes et retirer vos gains par Mobile Money'];
-
 const IDENTITY_STEP: Record<string, string> = {
   none: 'à faire avant votre premier retrait',
   pending: 'documents en cours de vérification',
@@ -74,11 +72,11 @@ export function SellerDashboardPage() {
             </Link>{' '}
             <span className="text-muted-foreground">({IDENTITY_STEP[me.identityChecks?.[0]?.status ?? 'none']})</span>
           </li>
-          {COMING_STEPS.map((step) => (
-            <li key={step}>
-              {step} <span className="text-muted-foreground">(bientôt disponible)</span>
-            </li>
-          ))}
+          <li>
+            <Link to="/vendeur/gains" className="font-medium text-primary hover:underline">
+              Suivre vos ventes et retirer vos gains par Mobile Money
+            </Link>
+          </li>
         </ol>
       </section>
     </div>

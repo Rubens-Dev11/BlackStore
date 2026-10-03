@@ -25,6 +25,10 @@ import { ProductReviewPage } from '@/pages/product-review-page';
 import { ReportsPage } from '@/pages/reports-page';
 import { IdentityChecksPage } from '@/pages/identity-checks-page';
 import { SellerIdentityPage } from '@/pages/seller/seller-identity-page';
+import { SellerWalletPage } from '@/pages/seller/seller-wallet-page';
+import { SellerReceiptPage } from '@/pages/seller/seller-receipt-page';
+import { WithdrawalsPage } from '@/pages/withdrawals-page';
+import { MarketplaceSettingsPage } from '@/pages/marketplace-settings-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -44,6 +48,8 @@ export function AppRouter() {
         <Route path="/vendeur/produits/nouveau" element={<SellerProductFormPage />} />
         <Route path="/vendeur/produits/:id" element={<SellerProductFormPage />} />
         <Route path="/vendeur/identite" element={<SellerIdentityPage />} />
+        <Route path="/vendeur/gains" element={<SellerWalletPage />} />
+        <Route path="/vendeur/gains/recus/:id" element={<SellerReceiptPage />} />
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
       </Route>
       <Route element={<AdminLayout />}>
@@ -60,6 +66,8 @@ export function AppRouter() {
         <Route path="/produits-a-valider" element={<ProductReviewPage />} />
         <Route path="/signalements" element={<ReportsPage />} />
         <Route path="/identites" element={<IdentityChecksPage />} />
+        <Route path="/retraits" element={<WithdrawalsPage />} />
+        <Route path="/reglages" element={<MarketplaceSettingsPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
