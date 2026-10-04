@@ -18,6 +18,7 @@ const navItems = [
   { to: '/identites', label: 'Identités' },
   { to: '/retraits', label: 'Retraits' },
   { to: '/reglages', label: 'Réglages' },
+  { to: '/sauvegardes', label: 'Sauvegardes' },
   { to: '/compte', label: 'Mon compte' },
 ];
 
@@ -54,11 +55,19 @@ export function AdminLayout() {
     enabled: _hasHydrated && !!accessToken && role !== 'seller',
     refetchInterval: 60_000,
   });
+  // Sauvegarde de la base trop ancienne ou en échec : pastille d'alerte.
+  const { data: backupHealth } = useQuery({
+    queryKey: ['admin-backups-health'],
+    queryFn: () => api.get<{ healthy: boolean }>('/admin/backups/health', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 5 * 60_000,
+  });
   // Pastille du menu : ce qui attend une décision.
   const badges: Record<string, number> = {
     '/produits-a-valider': pendingProducts?.length ?? 0,
     '/signalements': openReports?.length ?? 0,
     '/messages': openMessages?.length ?? 0,
+    '/sauvegardes': backupHealth && !backupHealth.healthy ? 1 : 0,
     '/identites': pendingIdentities?.length ?? 0,
     '/retraits': pendingWithdrawals?.length ?? 0,
   };
