@@ -1,10 +1,12 @@
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
+import { validationExceptionFactory } from './common/errors/validation-messages';
 
 /**
  * Bootstrap the NestJS application with all middleware and configurations.
@@ -24,7 +26,7 @@ async function bootstrap(): Promise<void> {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // 3. Global validation pipe
+  // 3. Global validation pipe (messages en français)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -33,8 +35,12 @@ async function bootstrap(): Promise<void> {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      exceptionFactory: validationExceptionFactory,
     }),
   );
+
+  // Toutes les erreurs répondent en français ; les erreurs imprévues portent une référence.
+  app.useGlobalFilters(new AllExceptionsFilter(app.get(HttpAdapterHost)));
 
   // 4. Cookie parser
   app.use(cookieParser());
