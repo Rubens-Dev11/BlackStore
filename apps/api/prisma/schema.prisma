@@ -175,6 +175,9 @@ model Order {
   utmCampaign      String?        @db.VarChar(100)       @map("utm_campaign")
   utmContent       String?        @db.VarChar(100)       @map("utm_content")
   referrerUrl      String?        @db.Text               @map("referrer_url")
+  // Version des conditions générales acceptées au moment de la commande.
+  termsVersion     String?        @db.VarChar(20)        @map("terms_version")
+  termsAcceptedAt  DateTime?                             @map("terms_accepted_at")
   items            OrderItem[]
   createdAt        DateTime       @default(now())        @map("created_at")
   paidAt           DateTime?                             @map("paid_at")
@@ -270,6 +273,9 @@ model Seller {
   emailVerifiedAt DateTime?                            @map("email_verified_at")
   statusChangedAt DateTime?                            @map("status_changed_at")
   lastLogin       DateTime?                            @map("last_login")
+  // Version des conditions vendeurs acceptées à l'inscription.
+  termsVersion    String?       @db.VarChar(20)        @map("terms_version")
+  termsAcceptedAt DateTime?                            @map("terms_accepted_at")
   tokens          SellerToken[]
   store           Store?
   identityChecks  IdentityCheck[]
@@ -313,9 +319,51 @@ model MarketplaceSettings {
   commissionRate Decimal  @default(10) @db.Decimal(5, 2) @map("commission_rate") // en %
   holdDays       Int      @default(7)                    @map("hold_days")       // délai avant qu'une vente soit retirable
   minWithdrawal  Int      @default(5000)                 @map("min_withdrawal")  // FCFA
+  // Identité de l'éditeur et contact, affichés dans les pages légales (remplis par l'admin).
+  legalName      String?  @db.VarChar(160)               @map("legal_name")      // personne ou société
+  legalForm      String?  @db.VarChar(160)               @map("legal_form")      // ex. entreprise individuelle
+  legalAddress   String?  @db.VarChar(300)               @map("legal_address")
+  rccm           String?  @db.VarChar(60)
+  niu            String?  @db.VarChar(30)                                         // numéro d'identifiant unique
+  contactEmail   String?  @db.VarChar(150)               @map("contact_email")
+  contactPhone   String?  @db.VarChar(30)                @map("contact_phone")   // aussi WhatsApp
+  hostingInfo    String?  @db.VarChar(300)               @map("hosting_info")    // nom et adresse de l'hébergeur
   updatedAt      DateTime @updatedAt                     @map("updated_at")
 
   @@map("marketplace_settings")
+}
+
+/// Message envoyé depuis le formulaire de contact (remboursement, commande, données personnelles…).
+model SupportRequest {
+  id          String         @id @default(uuid())
+  topic       SupportTopic
+  name        String         @db.VarChar(100)
+  email       String         @db.VarChar(150)
+  orderNumber String?        @db.VarChar(30)      @map("order_number")
+  message     String         @db.VarChar(3000)
+  status      SupportStatus  @default(open)
+  reply       String?        @db.Text                                 // réponse envoyée par e-mail
+  repliedAt   DateTime?                           @map("replied_at")
+  ipHash      String?        @db.VarChar(64)      @map("ip_hash")
+  createdAt   DateTime       @default(now())      @map("created_at")
+  updatedAt   DateTime       @updatedAt           @map("updated_at")
+
+  @@index([status])
+  @@map("support_requests")
+}
+
+enum SupportTopic {
+  order         // commande, téléchargement
+  refund        // demande de remboursement
+  seller        // question d'un vendeur
+  personal_data // accès, rectification, suppression de données
+  other
+}
+
+enum SupportStatus {
+  open
+  answered
+  closed
 }
 
 model WalletEntry {

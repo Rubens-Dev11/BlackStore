@@ -15,6 +15,7 @@ import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
 import { passwordStamp } from '../auth/password-stamp';
+import { LEGAL_VERSION } from '../legal/legal-version';
 import {
   LoginSellerDto,
   RegisterSellerDto,
@@ -71,6 +72,8 @@ export class SellersService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           phone: SellersService.normalizePhone(dto.phone),
+          termsVersion: LEGAL_VERSION,
+          termsAcceptedAt: new Date(),
         },
       });
     } catch (error) {

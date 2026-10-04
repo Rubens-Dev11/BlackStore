@@ -1,4 +1,5 @@
-import { IsEmail, IsHexadecimal, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { Equals, IsEmail, IsHexadecimal, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   NormalizeEmail,
@@ -39,6 +40,12 @@ export class RegisterSellerDto {
   @IsString()
   @Matches(SELLER_PASSWORD_PATTERN, { message: SELLER_PASSWORD_MESSAGE })
   password!: string;
+
+  @ApiProperty({ description: 'Acceptation des conditions vendeurs et de la politique de confidentialité' })
+  // Seul un vrai booléen « true » vaut acceptation (la conversion automatique ferait de « false » un vrai).
+  @Transform(({ obj }) => obj.acceptTerms === true)
+  @Equals(true, { message: 'Acceptez les conditions vendeurs et la politique de confidentialité pour créer votre compte' })
+  acceptTerms!: boolean;
 }
 
 export class LoginSellerDto {

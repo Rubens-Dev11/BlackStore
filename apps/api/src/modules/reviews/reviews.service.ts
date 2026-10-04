@@ -95,11 +95,36 @@ export class ReviewsService {
       },
     });
 
+    // L'e-mail de l'auteur ne sort jamais : on affiche le prénom et l'initiale du nom de sa commande.
+    const emails = [...new Set(reviews.map((r) => r.buyerEmail))];
+    const orders = emails.length
+      ? await this.prisma.order.findMany({
+          where: { buyerEmail: { in: emails }, status: 'paid' },
+          orderBy: { createdAt: 'desc' },
+          select: { buyerEmail: true, buyerName: true },
+        })
+      : [];
+    const names = new Map<string, string>();
+    for (const order of orders) {
+      if (!names.has(order.buyerEmail)) names.set(order.buyerEmail, order.buyerName);
+    }
+
     return {
-      reviews,
+      reviews: reviews.map(({ buyerEmail, ...review }) => ({
+        ...review,
+        author: ReviewsService.publicName(names.get(buyerEmail)) ?? 'Client vérifié',
+      })),
       ratingAvg: product.ratingAvg,
       ratingCount: product.ratingCount,
     };
+  }
+
+  /** « Jean-Paul Mbarga Ngono » → « Jean-Paul M. » ; null si le nom est vide. */
+  static publicName(fullName: string | undefined): string | null {
+    const words = (fullName ?? '').trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return null;
+    const first = words[0].slice(0, 30);
+    return words.length > 1 ? `${first} ${words[1].charAt(0).toUpperCase()}.` : first;
   }
 
   async findAll(query: ReviewListQuery) {

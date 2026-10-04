@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PUBLIC_PRODUCT_WHERE } from '../products/product-visibility';
 import { WalletService } from '../wallet/wallet.service';
+import { LEGAL_VERSION } from '../legal/legal-version';
 
 @Injectable()
 export class OrdersService {
@@ -55,6 +56,8 @@ export class OrdersService {
           buyerName: orderData.customerName,
           buyerEmail: orderData.customerEmail,
           buyerPhone: orderData.customerPhone,
+          termsVersion: LEGAL_VERSION,
+          termsAcceptedAt: new Date(),
           utmSource: orderData.utm_source,
           utmMedium: orderData.utm_medium,
           utmCampaign: orderData.utm_campaign,

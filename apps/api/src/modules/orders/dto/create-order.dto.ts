@@ -1,5 +1,5 @@
-import { IsString, IsEmail, IsArray, ValidateNested, IsOptional, IsUrl, IsNumber, Min, MinLength } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsEmail, IsArray, ValidateNested, IsOptional, IsUrl, IsNumber, Min, MinLength, Equals } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 class OrderItemDto {
   @IsString()
@@ -46,4 +46,10 @@ export class CreateOrderDto {
   @IsUrl()
   @IsOptional()
   referrer_url?: string;
+
+  /** Conditions générales de vente et politique de remboursement acceptées (case à cocher). */
+  // Seul un vrai booléen « true » vaut acceptation (la conversion automatique ferait de « false » un vrai).
+  @Transform(({ obj }) => obj.acceptTerms === true)
+  @Equals(true, { message: "Acceptez les conditions générales de vente pour passer commande" })
+  acceptTerms!: boolean;
 }

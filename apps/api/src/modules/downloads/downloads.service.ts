@@ -19,11 +19,16 @@ export class DownloadsService {
   async streamFile(token: string, req: Request) {
     const downloadToken = await this.prisma.downloadToken.findUnique({
       where: { token },
-      include: { orderItem: { include: { product: true } } },
+      include: { orderItem: { include: { product: true, order: { select: { status: true } } } } },
     });
 
     if (!downloadToken) {
       throw new NotFoundException('Lien de téléchargement introuvable');
+    }
+
+    // Lien désactivé, ou commande remboursée (ou jamais payée) : il ne sert plus.
+    if (!downloadToken.isActive || downloadToken.orderItem.order.status !== 'paid') {
+      throw new GoneException('Ce lien n’est plus valable : la commande a été remboursée ou n’est pas payée');
     }
 
     if (downloadToken.expiresAt < new Date()) {

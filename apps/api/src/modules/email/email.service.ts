@@ -70,7 +70,7 @@ export class EmailService {
         .map(
           (item) => `
             <li>
-              <strong>${item.name}</strong><br>
+              <strong>${EmailService.escapeHtml(item.name)}</strong><br>
               <a href="${this.downloadUrl(item.token)}">Télécharger</a>
               (${item.maxDownloads} téléchargements, jusqu'au ${EmailService.formatExpiry(item.expiresAt)})
             </li>
@@ -79,10 +79,10 @@ export class EmailService {
         .join('');
 
       const html = `
-        <h2>Bonjour ${customerName},</h2>
+        <h2>Bonjour ${EmailService.escapeHtml(customerName)},</h2>
         <p>Merci pour votre achat ! Voici vos liens de téléchargement :</p>
         <ul>${productList}</ul>
-        <p>Si vous avez des questions, contactez-nous.</p>
+        <p>Un problème avec un fichier ? <a href="${this.storefrontUrl()}/contact?sujet=order">Écrivez-nous</a>.</p>
       `;
 
       await this.transporter.sendMail({
@@ -114,7 +114,7 @@ export class EmailService {
     try {
       const tokenLinks = data.items.map(item => `
         <tr>
-          <td style="padding:8px;border:1px solid #333;">${item.productName}</td>
+          <td style="padding:8px;border:1px solid #333;">${EmailService.escapeHtml(item.productName)}</td>
           <td style="padding:8px;border:1px solid #333;">
             <a href="${this.downloadUrl(item.token)}" style="color:#f97316;">Télécharger</a>
           </td>
@@ -135,7 +135,7 @@ export class EmailService {
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;
             background:#0a0a0a;color:#fff;padding:32px;border-radius:8px;">
             <h1 style="color:#f97316;">BlackStore</h1>
-            <h2>Merci ${data.buyerName} !</h2>
+            <h2>Merci ${EmailService.escapeHtml(data.buyerName)} !</h2>
             <p>Votre commande <strong>${data.orderNumber}</strong> a été confirmée.</p>
             <p>Montant total : <strong>${data.totalAmount.toLocaleString('fr-FR')} FCFA</strong></p>
             <h3>Vos téléchargements :</h3>
@@ -152,6 +152,11 @@ export class EmailService {
             </table>
             <p style="margin-top:24px;color:#999;font-size:12px;">
               Ces liens sont personnels : ne les partagez pas.
+            </p>
+            <p style="color:#999;font-size:12px;">
+              Un problème avec votre commande ?
+              <a href="${this.storefrontUrl()}/contact?sujet=order&amp;commande=${encodeURIComponent(data.orderNumber)}" style="color:#f97316;">Écrivez-nous</a>
+              (voir aussi notre <a href="${this.storefrontUrl()}/remboursements" style="color:#f97316;">politique de remboursement</a>).
             </p>
             <p style="color:#999;font-size:12px;">© 2026 BlackStore — Produits Numériques</p>
           </div>
@@ -352,6 +357,10 @@ export class EmailService {
     return `${amount.toLocaleString('fr-FR')} FCFA`;
   }
 
+  private storefrontUrl(): string {
+    return this.configService.get<string>('STOREFRONT_URL', 'http://localhost:3001').replace(/\/+$/, '');
+  }
+
   private sellerAppUrl(): string {
     return this.configService.get<string>('SELLER_APP_URL', 'http://localhost:3002').replace(/\/+$/, '');
   }
@@ -413,5 +422,51 @@ export class EmailService {
         button: { label: 'Voir mes gains', url: `${this.sellerAppUrl()}/vendeur/gains` },
       }),
     );
+  }
+
+  // ─────────────────────────────────────────────
+  // Formulaire de contact
+  // ─────────────────────────────────────────────
+
+  /**
+   * Réponse de l'équipe à un message du formulaire de contact, avec le message d'origine en rappel.
+   * Renvoie false si l'envoi échoue, pour que l'administrateur le sache.
+   */
+  async sendSupportReply(params: {
+    to: string;
+    name: string;
+    topicLabel: string;
+    message: string;
+    reply: string;
+    replyTo: string | null;
+    contactUrl: string;
+  }): Promise<boolean> {
+    const text = (value: string) => EmailService.escapeHtml(value).replace(/\n/g, '<br>');
+    const html = EmailService.sellerLayout({
+      lines: [
+        `Bonjour ${EmailService.escapeHtml(params.name)},`,
+        text(params.reply),
+        `<span style="color:#999;">Votre message (${EmailService.escapeHtml(params.topicLabel)}) :</span><br>` +
+          `<span style="color:#bbb;">${text(params.message)}</span>`,
+      ],
+      note: params.replyTo
+        ? 'Vous pouvez répondre directement à cet e-mail.'
+        : `Pour nous écrire à nouveau, utilisez le formulaire de contact : ${EmailService.escapeHtml(params.contactUrl)}`,
+    });
+    try {
+      await this.transporter.sendMail({
+        from: this.fromAddress,
+        to: params.to,
+        subject: 'Réponse à votre message — BlackStore',
+        html,
+        ...(params.replyTo ? { replyTo: params.replyTo } : {}),
+      });
+      this.logger.log(`Réponse au message de contact envoyée à ${params.to}`);
+      return true;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Échec envoi de la réponse de contact à ${params.to}: ${message}`);
+      return false;
+    }
   }
 }

@@ -22,6 +22,8 @@ import { SellerProductsModule } from './modules/seller-products/seller-products.
 import { ReportsModule } from './modules/reports/reports.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { LegalModule } from './modules/legal/legal.module';
+import { SupportModule } from './modules/support/support.module';
 
 @Module({
   imports: [
@@ -86,6 +88,8 @@ import { WalletModule } from './modules/wallet/wallet.module';
     ReportsModule,
     IdentityModule,
     WalletModule,
+    LegalModule,
+    SupportModule,
   ],
 })
 export class AppModule {}
