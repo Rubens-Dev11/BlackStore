@@ -29,6 +29,7 @@ import { SellerWalletPage } from '@/pages/seller/seller-wallet-page';
 import { SellerReceiptPage } from '@/pages/seller/seller-receipt-page';
 import { WithdrawalsPage } from '@/pages/withdrawals-page';
 import { MarketplaceSettingsPage } from '@/pages/marketplace-settings-page';
+import { MessagesPage } from '@/pages/messages-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -67,6 +68,7 @@ export function AppRouter() {
         <Route path="/signalements" element={<ReportsPage />} />
         <Route path="/identites" element={<IdentityChecksPage />} />
         <Route path="/retraits" element={<WithdrawalsPage />} />
+        <Route path="/messages" element={<MessagesPage />} />
         <Route path="/reglages" element={<MarketplaceSettingsPage />} />
         <Route path="/compte" element={<AccountPage />} />
         <Route path="*" element={<NotFoundPage />} />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sellerAuthRequest, SellerApiError } from '@/lib/seller-api';
 import { sellerRegisterSchema } from '@/lib/validations';
+import { useStorefrontUrl } from '@/lib/legal';
 import { AuthButton, AuthField, AuthNotice, SellerAuthCard } from '@/layouts/seller-auth-card';
 
 const EMPTY_FORM = { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' };
@@ -12,6 +13,8 @@ export function SellerRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const storefront = useStorefrontUrl();
 
   const set = (field: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [field]: e.target.value });
@@ -25,11 +28,15 @@ export function SellerRegisterPage() {
       setError(result.error.issues[0].message);
       return;
     }
+    if (!acceptTerms) {
+      setError('Acceptez les conditions vendeurs et la politique de confidentialité pour créer votre compte');
+      return;
+    }
 
     setLoading(true);
     try {
       const { confirmPassword: _confirm, ...payload } = result.data;
-      await sellerAuthRequest('register', payload);
+      await sellerAuthRequest('register', { ...payload, acceptTerms: true });
       setRegisteredEmail(result.data.email);
     } catch (err) {
       setError(err instanceof SellerApiError ? err.message : 'Erreur. Réessayez.');
@@ -114,6 +121,20 @@ export function SellerRegisterPage() {
           value={form.confirmPassword}
           onChange={set('confirmPassword')}
         />
+        <label className="flex items-start gap-2 text-sm text-gray-300">
+          <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-orange-500" />
+          <span>
+            J'accepte les{' '}
+            <a href={`${storefront}/conditions-vendeurs`} target="_blank" rel="noreferrer" className="text-orange-400 hover:underline">
+              conditions vendeurs
+            </a>{' '}
+            et la{' '}
+            <a href={`${storefront}/confidentialite`} target="_blank" rel="noreferrer" className="text-orange-400 hover:underline">
+              politique de confidentialité
+            </a>{' '}
+            de BlackStore.
+          </span>
+        </label>
         {error && <AuthNotice tone="error">{error}</AuthNotice>}
         <AuthButton type="submit" loading={loading}>
           {loading ? 'Création du compte...' : 'Créer mon compte vendeur'}

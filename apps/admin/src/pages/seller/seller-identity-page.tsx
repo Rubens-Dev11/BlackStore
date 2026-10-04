@@ -11,6 +11,7 @@ import {
   type SellerProfile,
 } from '@/lib/seller-api';
 import { useAuthStore } from '@/stores/use-auth-store';
+import { useStorefrontUrl } from '@/lib/legal';
 import { apiErrorMessage, BUTTON_CLASS, INPUT_CLASS } from '@/components/form-field';
 
 type PhotoField = 'documentFront' | 'documentBack' | 'selfie';
@@ -73,6 +74,7 @@ export function SellerIdentityPage() {
   const [fullName, setFullName] = useState('');
   const [photos, setPhotos] = useState<Record<PhotoField, File | null>>({ documentFront: null, documentBack: null, selfie: null });
   const [consent, setConsent] = useState(false);
+  const storefront = useStorefrontUrl();
   const [progress, setProgress] = useState<number | null>(null);
 
   // Nom du compte proposé par défaut ; à corriger s'il diffère de la pièce.
@@ -185,7 +187,11 @@ export function SellerIdentityPage() {
             <input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             <span>
               J'accepte que BlackStore conserve ces documents pour vérifier mon identité et lutter contre la fraude. Seule l'équipe
-              BlackStore peut les consulter ; ils sont effacés si la vérification est refusée.
+              BlackStore peut les consulter ; ils sont effacés si la vérification est refusée (voir la{' '}
+              <a href={`${storefront}/confidentialite`} target="_blank" rel="noreferrer" className="text-primary underline">
+                politique de confidentialité
+              </a>
+              ).
             </span>
           </label>
 

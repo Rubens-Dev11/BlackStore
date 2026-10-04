@@ -14,6 +14,7 @@ const navItems = [
   { to: '/vendeurs', label: 'Vendeurs' },
   { to: '/produits-a-valider', label: 'Produits à valider' },
   { to: '/signalements', label: 'Signalements' },
+  { to: '/messages', label: 'Messages' },
   { to: '/identites', label: 'Identités' },
   { to: '/retraits', label: 'Retraits' },
   { to: '/reglages', label: 'Réglages' },
@@ -47,10 +48,17 @@ export function AdminLayout() {
     enabled: _hasHydrated && !!accessToken && role !== 'seller',
     refetchInterval: 60_000,
   });
+  const { data: openMessages } = useQuery({
+    queryKey: ['admin-messages', 'open'],
+    queryFn: () => api.get<unknown[]>('/admin/messages?status=open', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 60_000,
+  });
   // Pastille du menu : ce qui attend une décision.
   const badges: Record<string, number> = {
     '/produits-a-valider': pendingProducts?.length ?? 0,
     '/signalements': openReports?.length ?? 0,
+    '/messages': openMessages?.length ?? 0,
     '/identites': pendingIdentities?.length ?? 0,
     '/retraits': pendingWithdrawals?.length ?? 0,
   };
