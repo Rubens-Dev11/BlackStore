@@ -86,8 +86,7 @@ export function ReviewList({ reviews, ratingAvg, ratingCount }: Props) {
                   ))}
                 </div>
                 <span className="text-sm font-medium text-white">
-                  {review.buyerEmail.split('@')[0]}
-                  <span className="text-zinc-600">***@{review.buyerEmail.split('@')[1]}</span>
+                  {review.author}
                 </span>
               </div>
               <span className="text-xs text-zinc-500">

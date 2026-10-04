@@ -10,6 +10,8 @@ export interface CreateOrderPayload {
   utm_campaign?: string;
   utm_content?: string;
   referrer_url?: string;
+  /** Conditions générales de vente acceptées (case à cocher). */
+  acceptTerms: true;
 }
 
 export interface OrderCreatedResponse {

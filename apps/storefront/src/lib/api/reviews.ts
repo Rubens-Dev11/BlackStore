@@ -2,7 +2,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface Review {
   id: string;
-  buyerEmail: string;
+  /** Prénom et initiale du nom de l'acheteur (son e-mail n'est jamais affiché). */
+  author: string;
   rating: number;
   comment?: string;
   createdAt: string;

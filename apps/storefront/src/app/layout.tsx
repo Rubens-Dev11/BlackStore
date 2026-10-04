@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { QueryProvider } from '@/providers/query-provider';
 import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 import './globals.css';
 import { Toaster } from 'sonner';
 
@@ -39,6 +40,7 @@ export default function RootLayout({
             <div className="animate-fade-in">
               {children}
             </div>
+            <Footer />
             <Toaster position="top-right" richColors duration={3000} />
         </QueryProvider>
       </body>

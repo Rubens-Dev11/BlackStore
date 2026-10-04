@@ -22,6 +22,8 @@ export function CheckoutPageClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isCompletingOrder, setIsCompletingOrder] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [termsError, setTermsError] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -66,6 +68,10 @@ export function CheckoutPageClient() {
       setErrors(fieldErrors);
       return;
     }
+    if (!acceptTerms) {
+      setTermsError(true);
+      return;
+    }
 
     setIsSubmitting(true);
     setIsCompletingOrder(true); // Empêche la redirection vers /panier pendant la finalisation
@@ -83,6 +89,7 @@ export function CheckoutPageClient() {
         customerEmail: form.customerEmail.toLowerCase().trim(),
         customerPhone: form.customerPhone?.trim() ?? '',
         items: orderItems,
+        acceptTerms: true,
         // totalAmount and currency are removed as they are not expected by the DTO
       });
 
@@ -190,7 +197,7 @@ export function CheckoutPageClient() {
               <p className="mt-1 text-xs text-red-400">{errors.customerEmail}</p>
             )}
             <p className="mt-1 text-xs text-zinc-500">
-              Vos tokens de téléchargement seront envoyés à cet email.
+              Vos liens de téléchargement seront envoyés à cette adresse.
             </p>
           </div>
 
@@ -219,6 +226,33 @@ export function CheckoutPageClient() {
             </p>
           </div>
 
+          {/* Conditions générales de vente */}
+          <div>
+            <label className="flex items-start gap-3 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => {
+                  setAcceptTerms(e.target.checked);
+                  setTermsError(false);
+                }}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-orange-500"
+              />
+              <span>
+                J&apos;accepte les{' '}
+                <Link href="/conditions-generales" target="_blank" className="text-orange-400 hover:underline">
+                  conditions générales de vente
+                </Link>{' '}
+                et la{' '}
+                <Link href="/remboursements" target="_blank" className="text-orange-400 hover:underline">
+                  politique de remboursement
+                </Link>
+                , et je demande l&apos;accès immédiat à mes produits numériques.
+              </span>
+            </label>
+            {termsError && <p className="mt-1 text-xs text-red-400">Cochez cette case pour passer commande.</p>}
+          </div>
+
           {/* Erreur globale */}
           {globalError && (
             <div className="rounded-lg border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-400">
@@ -240,7 +274,7 @@ export function CheckoutPageClient() {
             ) : (
               <>
                 <ShieldCheck className="h-4 w-4" />
-                {total === 0 ? `Télécharger maintenant` : `Payer {formatFcfa(total)} — Mobile Money`}
+                {total === 0 ? `Télécharger maintenant` : `Payer ${formatFcfa(total)} — Mobile Money`}
               </>
             )}
           </button>
