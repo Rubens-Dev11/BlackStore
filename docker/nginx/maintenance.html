@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <!-- Sans JavaScript, la page se recharge quand même toute seule. -->
+  <meta http-equiv="refresh" content="30">
+  <title>BlackStore revient dans un instant</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+    }
+    main { width: 100%; max-width: 460px; }
+    .logo { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+    .logo span { color: #f97316; }
+    .icon {
+      width: 64px; height: 64px; margin: 32px auto 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 16px; background: rgba(249, 115, 22, 0.1); color: #fb923c;
+      box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.25);
+    }
+    .icon svg { width: 32px; height: 32px; animation: spin 2.4s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .icon svg { animation: none; } }
+    h1 { margin: 24px 0 0; font-size: 24px; line-height: 1.3; }
+    p { margin: 12px 0 0; color: #a1a1aa; line-height: 1.6; }
+    .note { font-size: 14px; color: #71717a; }
+    button {
+      margin-top: 28px; height: 48px; padding: 0 24px;
+      border: 0; border-radius: 8px; background: #f97316; color: #fff;
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    button:hover { background: #ea580c; }
+    button:focus-visible { outline: 2px solid #fb923c; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="logo">Black<span>Store</span></p>
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+      </svg>
+    </div>
+    <h1>BlackStore revient dans un instant</h1>
+    <p>Le site est en cours de mise à jour ou redémarre. Cela prend en général moins d'une minute.</p>
+    <p class="note">Vos achats et vos liens de téléchargement ne sont pas perdus.</p>
+    <button type="button" id="retry">Réessayer maintenant</button>
+    <p class="note" id="countdown" aria-live="polite"></p>
+  </main>
+  <script>
+    (function () {
+      var seconds = 15;
+      var label = document.getElementById('countdown');
+      document.getElementById('retry').onclick = function () { location.reload(); };
+      function tick() {
+        if (seconds <= 0) { location.reload(); return; }
+        label.textContent = 'Nouvel essai automatique dans ' + seconds + ' s.';
+        seconds -= 1;
+        setTimeout(tick, 1000);
+      }
+      tick();
+    })();
+  </script>
+</body>
+</html>
