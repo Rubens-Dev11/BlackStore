@@ -366,6 +366,36 @@ enum SupportStatus {
   closed
 }
 
+/// Une exécution de maintenance : sauvegarde de la base, protection des fichiers ou purge des données anciennes.
+model BackupRun {
+  id         String          @id @default(uuid())
+  kind       BackupKind
+  status     BackupRunStatus @default(running)
+  trigger    String          @db.VarChar(20)                   // schedule, startup, manual
+  fileName   String?         @db.VarChar(200) @map("file_name") // fichier de sauvegarde de la base
+  sizeBytes  BigInt?                          @map("size_bytes")
+  sha256     String?         @db.VarChar(64)
+  offsite    String?         @db.VarChar(30)                   // copie hors du serveur : uploaded, disabled, failed
+  details    String?         @db.Text
+  startedAt  DateTime        @default(now())  @map("started_at")
+  finishedAt DateTime?                        @map("finished_at")
+
+  @@index([kind, startedAt])
+  @@map("backup_runs")
+}
+
+enum BackupKind {
+  database  // copie de la base (pg_dump)
+  files     // versions des fichiers et copie hors du serveur
+  retention // suppression des données anciennes (politique de confidentialité)
+}
+
+enum BackupRunStatus {
+  running
+  success
+  failed
+}
+
 model WalletEntry {
   id             String          @id @default(uuid())
   sellerId       String                                @map("seller_id")

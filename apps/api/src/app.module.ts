@@ -24,6 +24,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { LegalModule } from './modules/legal/legal.module';
 import { SupportModule } from './modules/support/support.module';
+import { BackupsModule } from './modules/backups/backups.module';
 
 @Module({
   imports: [
@@ -53,6 +54,17 @@ import { SupportModule } from './modules/support/support.module';
         // Antivirus ClamAV (démon clamd) qui analyse les fichiers des vendeurs.
         CLAMAV_HOST: Joi.string().default('clamav'),
         CLAMAV_PORT: Joi.number().default(3310),
+        // Sauvegardes : dossier des copies de la base (monté depuis le serveur) ; sur un poste sans
+        // client PostgreSQL, conteneur où lancer pg_dump (essais locaux).
+        BACKUP_DIR: Joi.string().optional(),
+        BACKUP_PG_DOCKER_CONTAINER: Joi.string().optional(),
+        BACKUP_STARTUP_DELAY_MS: Joi.number().optional(),
+        // Copie hors du serveur (stockage compatible S3), désactivée si l'un des champs manque.
+        BACKUP_S3_URL: Joi.string().uri().optional(),
+        BACKUP_S3_REGION: Joi.string().optional(),
+        BACKUP_S3_BUCKET: Joi.string().optional(),
+        BACKUP_S3_ACCESS_KEY: Joi.string().optional(),
+        BACKUP_S3_SECRET_KEY: Joi.string().optional(),
       }),
     }),
 
@@ -90,6 +102,7 @@ import { SupportModule } from './modules/support/support.module';
     WalletModule,
     LegalModule,
     SupportModule,
+    BackupsModule,
   ],
 })
 export class AppModule {}

@@ -425,6 +425,26 @@ export class EmailService {
   }
 
   // ─────────────────────────────────────────────
+  // Sauvegardes
+  // ─────────────────────────────────────────────
+
+  /** Alerte : une sauvegarde automatique a échoué. */
+  async sendBackupAlert(to: string, what: string, reason: string, adminUrl: string): Promise<void> {
+    await this.sendSellerMail(
+      to,
+      'Sauvegarde en échec — BlackStore',
+      EmailService.sellerLayout({
+        lines: [
+          `La sauvegarde automatique de cette nuit n'a pas fonctionné : échec de ${EmailService.escapeHtml(what)}.`,
+          `Motif : <em>${EmailService.escapeHtml(reason)}</em>`,
+          'Le site continue de fonctionner, mais les données ne sont plus copiées tant que le problème dure.',
+        ],
+        button: { label: 'Voir les sauvegardes', url: adminUrl },
+      }),
+    );
+  }
+
+  // ─────────────────────────────────────────────
   // Formulaire de contact
   // ─────────────────────────────────────────────
 

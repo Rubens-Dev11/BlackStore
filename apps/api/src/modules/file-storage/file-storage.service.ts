@@ -124,9 +124,47 @@ export class FileStorageService implements OnModuleInit {
     await this.minioClient.putObject(this.bucketName, objectKey, buffer, buffer.length, { 'Content-Type': mimeType });
   }
 
-  /** Lecture en flux d'un fichier stocké (analyse antivirus). */
+  /** Lecture en flux d'un fichier stocké (analyse antivirus, copie hors du serveur). */
   async getObjectStream(objectKey: string): Promise<Readable> {
     return this.minioClient.getObject(this.bucketName, objectKey);
+  }
+
+  /** Tous les fichiers stockés (nom et taille), pour la copie hors du serveur. */
+  async listAllObjects(): Promise<Array<{ name: string; size: number }>> {
+    const objects: Array<{ name: string; size: number }> = [];
+    for await (const item of this.minioClient.listObjectsV2(this.bucketName, '', true) as AsyncIterable<{ name?: string; size: number }>) {
+      if (item.name) objects.push({ name: item.name, size: item.size });
+    }
+    return objects;
+  }
+
+  /**
+   * Protection des fichiers : un fichier supprimé ou remplacé reste récupérable 30 jours (versions),
+   * sauf les pièces d'identité, réellement effacées dès leur suppression. Sans effet si c'est déjà fait.
+   */
+  async ensureVersioning(keepDays: number): Promise<string> {
+    await this.minioClient.setBucketVersioning(this.bucketName, {
+      Status: 'Enabled',
+      ExcludedPrefixes: [{ Prefix: 'identity/' }],
+    } as unknown as Parameters<Minio.Client['setBucketVersioning']>[1]);
+    await this.minioClient.setBucketLifecycle(this.bucketName, {
+      Rule: [
+        {
+          ID: 'anciennes-versions',
+          Status: 'Enabled',
+          Filter: { Prefix: '' },
+          NoncurrentVersionExpiration: { NoncurrentDays: keepDays },
+          Expiration: { ExpiredObjectDeleteMarker: true },
+        },
+      ],
+    } as unknown as Parameters<Minio.Client['setBucketLifecycle']>[1]);
+    return this.versioningStatus();
+  }
+
+  /** « Enabled » quand les fichiers supprimés restent récupérables. */
+  async versioningStatus(): Promise<string> {
+    const config = (await this.minioClient.getBucketVersioning(this.bucketName)) as { Status?: string } | null;
+    return config?.Status ?? 'Off';
   }
 
   async uploadScreenshot(

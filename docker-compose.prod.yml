@@ -21,6 +21,11 @@ services:
       - "host.docker.internal:host-gateway"
     env_file:
       - .env.production
+    environment:
+      # Sauvegardes de la base : écrites dans un dossier du serveur, hors des volumes Docker.
+      BACKUP_DIR: /backups
+    volumes:
+      - ${BACKUP_HOST_DIR:-/home/ubuntu/backups-blackstore/auto}:/backups
     depends_on:
       postgres:
         condition: service_healthy
