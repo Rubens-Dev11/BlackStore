@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { PageErrorBoundary } from '@/components/page-error-boundary';
 import { getApiUrl } from '@/lib/env';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { useSellerPageTitle } from './seller-auth-card';
@@ -80,7 +81,9 @@ export function SellerLayout() {
         </nav>
         <main className="flex-1 p-4 md:p-6">
           <div className="animate-fade-in">
-            <Outlet />
+            <PageErrorBoundary>
+              <Outlet />
+            </PageErrorBoundary>
           </div>
         </main>
       </div>

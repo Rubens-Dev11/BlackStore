@@ -1,4 +1,5 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
+import { PageErrorBoundary } from '@/components/page-error-boundary';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { getApiUrl } from '@/lib/env';
@@ -125,7 +126,9 @@ export function AdminLayout() {
         </header>
         <main className="flex-1 p-6">
           <div className="animate-fade-in">
-            <Outlet />
+            <PageErrorBoundary>
+              <Outlet />
+            </PageErrorBoundary>
           </div>
         </main>
       </div>

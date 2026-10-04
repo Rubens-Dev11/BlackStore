@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes } from 'react';
+import { NETWORK_ERROR, SERVER_ERROR, statusMessage } from '@/lib/errors';
 
 // Éléments de formulaire partagés par les pages de l'espace vendeur.
 
@@ -17,5 +18,11 @@ export function FormField({ label, id, ...input }: { label: string; id: string }
 }
 
 /** Message affichable d'une erreur d'API (les erreurs de validation arrivent sous forme de liste). */
-export const apiErrorMessage = (err: any): string =>
-  (Array.isArray(err?.message) ? err.message[0] : err?.message) || 'Erreur serveur. Réessayez.';
+export const apiErrorMessage = (err: any): string => {
+  // fetch() appelé directement : une coupure réseau donne une TypeError en anglais
+  // (« Failed to fetch », « NetworkError… », « Load failed » selon le navigateur).
+  if (err instanceof TypeError && /fetch|network|load failed/i.test(err.message)) return NETWORK_ERROR;
+  const message = Array.isArray(err?.message) ? err.message[0] : err?.message;
+  if (typeof message === 'string' && message.trim()) return message;
+  return statusMessage(err?.status) ?? SERVER_ERROR;
+};

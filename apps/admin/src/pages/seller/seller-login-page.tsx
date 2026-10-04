@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { sellerAuthRequest, SellerApiError, type SellerTokens } from '@/lib/seller-api';
 import { sellerLoginSchema } from '@/lib/validations';
@@ -7,6 +7,8 @@ import { AuthButton, AuthField, AuthNotice, SellerAuthCard } from '@/layouts/sel
 
 export function SellerLoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('session') === 'expiree';
   const { accessToken, role, setTokens } = useAuthStore();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState<SellerApiError | null>(null);
@@ -63,6 +65,7 @@ export function SellerLoginPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {sessionExpired && !error && <AuthNotice tone="info">Votre session a expiré : reconnectez-vous pour continuer.</AuthNotice>}
         <AuthField label="E-mail" id="email" type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <AuthField label="Mot de passe" id="password" type="password" autoComplete="current-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         {error && (

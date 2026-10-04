@@ -1,4 +1,5 @@
 import { getApiUrl } from './env';
+import { NETWORK_ERROR, SERVER_ERROR, SESSION_EXPIRED_PARAM, responseMessage, statusMessage } from './errors';
 import { loginPathFor, useAuthStore } from '@/stores/use-auth-store';
 
 const BASE_URL = getApiUrl();
@@ -26,14 +27,19 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
 
     // Les appelants (api.get/post/...) passent déjà l'URL complète (BASE_URL + path).
     // Ne PAS re-préfixer BASE_URL ici, sinon l'URL est doublée et fetch échoue.
-    const response = await fetch(typeof input === 'string' ? input : input.url, {
-      ...init,
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await fetch(typeof input === 'string' ? input : input.url, {
+        ...init,
+        headers,
+      });
+    } catch {
+      // Coupure réseau ou serveur injoignable : fetch() échoue sans réponse.
+      throw { status: 0, message: NETWORK_ERROR };
+    }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw { status: response.status, message: error.message || 'Server error' };
+      throw { status: response.status, message: await responseMessage(response) };
     }
 
     return response;
@@ -48,7 +54,7 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
       if (!refreshToken) {
         // No refresh token, logout
         useAuthStore.getState().clearAuth();
-        window.location.href = loginPath;
+        window.location.href = `${loginPath}?${SESSION_EXPIRED_PARAM}`;
         throw err;
       }
 
@@ -99,7 +105,7 @@ async function fetchWithRefresh(input: RequestInfo, init?: RequestInit): Promise
         // Session expirée ou fermée (mot de passe changé, compte suspendu) : retour à la connexion.
         if (err instanceof Error && err.message === 'Refresh failed') {
           useAuthStore.getState().clearAuth();
-          window.location.href = loginPath;
+          window.location.href = `${loginPath}?${SESSION_EXPIRED_PARAM}`;
         }
         throw err;
       } finally {
@@ -147,20 +153,20 @@ function postFormWithProgress<T>(
         return;
       }
 
-      let message = xhr.status === 401
+      let message: string | string[] = xhr.status === 401
         ? 'Session expirée, merci de recharger la page et réessayer.'
-        : 'Erreur serveur';
+        : statusMessage(xhr.status) ?? SERVER_ERROR;
       try {
         const parsed = JSON.parse(xhr.responseText);
         message = parsed.message || message;
       } catch {
-        // réponse non-JSON, on garde le message par défaut
+        // réponse non-JSON (page du serveur pendant une mise à jour…), on garde le message par défaut
       }
       reject({ status: xhr.status, message });
     };
 
     xhr.onerror = () => {
-      reject({ status: 0, message: "Erreur réseau pendant l'upload" });
+      reject({ status: 0, message: "Connexion perdue pendant l'envoi du fichier. Vérifiez votre connexion internet, puis réessayez." });
     };
 
     xhr.send(body);

@@ -1,27 +1,27 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-export function NotFoundPage() {
-  const navigate = useNavigate();
+/** Adresse inconnue, dans l'admin ou dans l'espace vendeur (chacun garde son menu). */
+export function NotFoundPage({ space = 'admin' }: { space?: 'admin' | 'vendeur' }) {
+  const home = space === 'vendeur'
+    ? { to: '/vendeur', label: 'Retour à mon espace vendeur' }
+    : { to: '/dashboard', label: 'Retour au tableau de bord' };
 
   return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
-      <div className="relative">
-        <h1 className="text-9xl font-extrabold tracking-widest text-gray-900 dark:text-white">404</h1>
-        <div className="bg-orange-500 px-2 text-sm rounded rotate-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          Page Introuvable
-        </div>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+        </svg>
       </div>
-      <div className="mt-5">
-        <p className="text-lg font-medium text-gray-500 dark:text-gray-400">
-          Désolé, nous n'avons pas pu trouver la page que vous cherchez.
-        </p>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="mt-8 px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-md transition duration-200"
-        >
-          Retour au dashboard
-        </button>
-      </div>
+      <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Erreur 404</p>
+      <h1 className="mt-2 text-2xl font-bold">Page introuvable</h1>
+      <p className="mt-3 max-w-md text-muted-foreground">
+        Cette adresse ne correspond à aucune page. Le lien est peut-être incomplet, ou la page a été déplacée.
+      </p>
+      <Link to={home.to} className="mt-6 rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+        {home.label}
+      </Link>
     </div>
   );
 }

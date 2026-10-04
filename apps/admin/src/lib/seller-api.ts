@@ -1,4 +1,5 @@
 import { getApiUrl } from './env';
+import { MAINTENANCE_ERROR } from './errors';
 
 export type SellerStatus = 'pending' | 'approved' | 'suspended';
 
@@ -86,6 +87,9 @@ export class SellerApiError extends Error {
 const DEFAULT_MESSAGES: Record<number, string> = {
   429: 'Trop de tentatives. Réessayez dans une minute.',
   500: 'Erreur serveur. Réessayez.',
+  502: MAINTENANCE_ERROR,
+  503: MAINTENANCE_ERROR,
+  504: MAINTENANCE_ERROR,
 };
 
 /**

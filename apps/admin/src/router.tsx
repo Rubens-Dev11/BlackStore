@@ -53,6 +53,7 @@ export function AppRouter() {
         <Route path="/vendeur/gains" element={<SellerWalletPage />} />
         <Route path="/vendeur/gains/recus/:id" element={<SellerReceiptPage />} />
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
+        <Route path="/vendeur/*" element={<NotFoundPage space="vendeur" />} />
       </Route>
       <Route element={<AdminLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

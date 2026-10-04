@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/use-auth-store';
 import { notify } from '@/lib/toast';
 import { loginSchema } from '@/lib/validations';
+import { NETWORK_ERROR, responseMessage } from '@/lib/errors';
 
 interface LoginResponse {
   accessToken: string;
@@ -11,6 +12,8 @@ interface LoginResponse {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('session') === 'expiree';
   const { accessToken, setTokens } = useAuthStore();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState<boolean>(false);
@@ -41,10 +44,11 @@ export function LoginPage() {
       } else if (response.status === 401) {
         notify.error('Email ou mot de passe incorrect');
       } else {
-        notify.error('Erreur serveur. Réessayez.');
+        const message = await responseMessage(response);
+        notify.error(Array.isArray(message) ? message[0] : message);
       }
     } catch (err) {
-      notify.error('Erreur serveur. Réessayez.');
+      notify.error(NETWORK_ERROR);
     } finally {
       setLoading(false);
     }
@@ -59,6 +63,11 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="w-full max-w-md p-8 bg-gray-800 rounded-lg">
         <h1 className="text-2xl font-bold text-white text-center mb-6">BlackStore Admin</h1>
+        {sessionExpired && (
+          <p className="mb-4 rounded-md border border-gray-600 bg-gray-900 px-4 py-3 text-sm text-gray-300" role="status">
+            Votre session a expiré : reconnectez-vous pour continuer.
+          </p>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
