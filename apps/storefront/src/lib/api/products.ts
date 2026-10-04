@@ -83,11 +83,13 @@ export async function fetchFeaturedProducts(): Promise<ProductSummary[]> {
   return res.json();
 }
 
-export async function fetchProductBySlug(slug: string): Promise<ProductDetail> {
-    const res = await fetch(`${getBaseUrl()}/products/${slug}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Produit introuvable');
-    return res.json();
-  }
+/** Fiche d'un produit ; null s'il n'existe pas (ou plus). Une panne de l'API lève une erreur. */
+export async function fetchProductBySlug(slug: string): Promise<ProductDetail | null> {
+  const res = await fetch(`${getBaseUrl()}/products/${encodeURIComponent(slug)}`, { cache: 'no-store' });
+  if (res.status === 404 || res.status === 400) return null;
+  if (!res.ok) throw new Error(`Produit indisponible (erreur ${res.status})`);
+  return res.json();
+}
 
 export async function trackPageView(productId: string): Promise<void> {
   try {

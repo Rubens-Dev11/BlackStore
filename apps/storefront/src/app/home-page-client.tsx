@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, RotateCw, WifiOff } from 'lucide-react';
 import { ProductCard } from '@/components/products/product-card';
 import { fetchProducts, type ProductSummary } from '@/lib/api/products';
 import { fetchCategories } from '@/lib/api/categories';
@@ -20,7 +20,13 @@ export function HomePageClient() {
     }, 400);
   };
 
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    isError: productsFailed,
+    refetch: retryProducts,
+    isFetching: productsFetching,
+  } = useQuery({
     queryKey: ['products', selectedCategoryId, debouncedSearch],
     queryFn: () => fetchProducts({ categoryId: selectedCategoryId || undefined, search: debouncedSearch }),
   });
@@ -89,6 +95,26 @@ export function HomePageClient() {
       {isLoading ? (
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        </div>
+      ) : productsFailed && !productsData ? (
+        // Catalogue injoignable : ne pas laisser croire qu'il est vide.
+        <div className="mx-auto max-w-md py-20 text-center" role="alert">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/25">
+            <WifiOff className="h-7 w-7" aria-hidden="true" />
+          </div>
+          <p className="mt-5 text-lg font-semibold text-white">Le catalogue n&apos;a pas pu se charger</p>
+          <p className="mt-2 text-sm text-zinc-400">
+            Vérifiez votre connexion internet. Si elle fonctionne, BlackStore est peut-être en cours de mise à jour : réessayez dans un instant.
+          </p>
+          <button
+            type="button"
+            onClick={() => retryProducts()}
+            disabled={productsFetching}
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+          >
+            <RotateCw className={`h-4 w-4 ${productsFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
+            {productsFetching ? 'Nouvel essai…' : 'Réessayer'}
+          </button>
         </div>
       ) : products.length === 0 ? (
         <div className="py-24 text-center text-zinc-500">

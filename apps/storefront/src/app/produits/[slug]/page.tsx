@@ -42,15 +42,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch {
-    return { title: 'BlackStore' };
+    // API injoignable : la page affichera l'erreur avec « Réessayer ».
+    return { title: 'Page momentanément indisponible' };
   }
 }
 
 export default async function ProductPage({ params }: Props) {
-  let product;
-  try {
-    product = await fetchProductBySlug(params.slug);
-  } catch {
+  // Produit absent : page « introuvable » ; API en panne : page d'erreur (avec « Réessayer »).
+  const product = await fetchProductBySlug(params.slug);
+  if (!product) {
     notFound();
   }
   return <ProductPageClient product={product} />;

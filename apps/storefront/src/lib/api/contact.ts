@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/lib/env';
+import { apiFetch, responseError } from './errors';
 
 export type ContactTopic = 'order' | 'refund' | 'seller' | 'personal_data' | 'other';
 
@@ -22,18 +23,17 @@ export interface ContactMessage {
 
 /** Envoie le message ; lève une erreur avec un texte lisible en cas de refus. */
 export async function sendContactMessage(data: ContactMessage): Promise<string> {
-  const res = await fetch(`${getApiUrl()}/contact`, {
+  const res = await apiFetch(`${getApiUrl()}/contact`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  const body = await res.json().catch(() => ({}));
   if (res.status === 429) {
     throw new Error('Trop de messages envoyés depuis votre connexion : réessayez dans une heure.');
   }
   if (!res.ok) {
-    const message = Array.isArray(body.message) ? body.message[0] : body.message;
-    throw new Error(message || 'Envoi impossible pour le moment. Réessayez dans quelques minutes.');
+    throw await responseError(res, 'Envoi impossible pour le moment. Réessayez dans quelques minutes.');
   }
+  const body = await res.json().catch(() => ({}));
   return body.message as string;
 }

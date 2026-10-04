@@ -1,15 +1,16 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { LayoutGrid, Mail, XCircle } from 'lucide-react';
+import { ErrorPanel } from '@/components/errors/error-panel';
 
 interface PendingOrder {
   orderNumber: string;
   buyerEmail: string;
 }
 
+/** Paiement refusé ou annulé chez l'opérateur : rien n'est livré pour cette commande. */
 export function OrderFailureClient() {
-  const router = useRouter();
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
 
   useEffect(() => {
@@ -24,34 +25,24 @@ export function OrderFailureClient() {
     }
   }, []);
 
+  const contactHref = `/contact?sujet=order${pendingOrder?.orderNumber ? `&commande=${encodeURIComponent(pendingOrder.orderNumber)}` : ''}`;
+
   return (
-    <main className="min-h-screen p-8 text-white">
-      <div className="container mx-auto text-center py-16">
-        <div className="mb-6">
-          <span className="text-red-500 text-6xl">❌</span>
-        </div>
-        <h1 className="text-3xl font-bold mb-4">Paiement échoué</h1>
-        <p className="text-lg mb-6">Votre paiement n'a pas pu être traité. Aucun montant n'a été débité.</p>
-        {pendingOrder && (
-          <p className="text-lg mb-8">
-            <span className="font-semibold">Référence :</span> {pendingOrder.orderNumber}
-          </p>
-        )}
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={() => router.push('/commande')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded"
-          >
-            Réessayer
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded"
-          >
-            Retour à l'accueil
-          </button>
-        </div>
-      </div>
-    </main>
+    <ErrorPanel
+      icon={XCircle}
+      tone="danger"
+      eyebrow="Paiement non abouti"
+      title="Votre paiement n'a pas abouti"
+      details={pendingOrder?.orderNumber ? [{ label: 'Référence', value: pendingOrder.orderNumber }] : undefined}
+      primary={{ label: 'Retour au catalogue', href: '/', icon: LayoutGrid }}
+      secondary={{ label: 'Nous contacter', href: contactHref, icon: Mail }}
+      helpHref={null}
+    >
+      <p>
+        Le paiement a été refusé ou annulé : cette commande n&apos;est pas payée et ne donne pas accès au téléchargement. Vous pouvez recommencer votre achat
+        depuis le catalogue.
+      </p>
+      <p>Votre compte Mobile Money a quand même été débité ? Écrivez-nous avec la référence de la commande : nous vérifierons auprès de l&apos;opérateur.</p>
+    </ErrorPanel>
   );
 }

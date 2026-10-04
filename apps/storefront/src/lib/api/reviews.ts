@@ -1,3 +1,5 @@
+import { apiFetch, responseError } from './errors';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface Review {
@@ -22,15 +24,14 @@ export async function fetchReviews(productId: string): Promise<ReviewResponse> {
 }
 
 export async function submitReview(productId: string, data: { buyerEmail: string; rating: number; comment?: string }) {
-  const res = await fetch(`${API_URL}/reviews/${productId}`, {
+  const res = await apiFetch(`${API_URL}/reviews/${productId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  
+
   if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.message || 'Erreur lors de la soumission de l\'avis');
+    throw await responseError(res, "Votre avis n'a pas pu être envoyé. Réessayez.");
   }
   
   return res.json();

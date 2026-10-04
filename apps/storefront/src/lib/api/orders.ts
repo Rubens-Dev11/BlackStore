@@ -1,3 +1,5 @@
+import { apiFetch, responseError } from './errors';
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export interface CreateOrderPayload {
@@ -38,14 +40,13 @@ export interface InitiatePaymentResponse {
 export async function createOrder(
   payload: CreateOrderPayload,
 ): Promise<OrderCreatedResponse> {
-  const res = await fetch(`${API}/orders`, {
+  const res = await apiFetch(`${API}/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? 'Erreur création commande');
+    throw await responseError(res, "La commande n'a pas pu être enregistrée. Réessayez.");
   }
   return res.json();
 }
@@ -53,14 +54,13 @@ export async function createOrder(
 export async function initiatePayment(
   payload: InitiatePaymentPayload,
 ): Promise<InitiatePaymentResponse> {
-  const res = await fetch(`${API}/payments/initiate`, {
+  const res = await apiFetch(`${API}/payments/initiate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? 'Erreur initialisation paiement');
+    throw await responseError(res, "Le paiement n'a pas pu démarrer. Réessayez.");
   }
   return res.json();
 }

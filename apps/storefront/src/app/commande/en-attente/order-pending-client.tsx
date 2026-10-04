@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import { Clock, Mail } from 'lucide-react';
+import { ErrorPanel } from '@/components/errors/error-panel';
 
 interface PendingOrder {
   orderNumber: string;
@@ -94,24 +96,21 @@ export function OrderPendingClient() {
   }
 
   if (timedOut) {
+    const contactHref = `/contact?sujet=order${pendingOrder?.orderNumber ? `&commande=${encodeURIComponent(pendingOrder.orderNumber)}` : ''}`;
     return (
-      <main className="min-h-screen p-8 text-white">
-        <div className="container mx-auto text-center py-16">
-          <div className="mb-6">
-            <span className="text-yellow-500 text-6xl">⚠️</span>
-          </div>
-          <h1 className="text-3xl font-bold mb-4">Délai d'attente dépassé</h1>
-          <p className="text-lg mb-6">
-            Nous n'avons pas reçu de confirmation dans les délais. Si vous avez été débité, contactez le support.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded"
-          >
-            Retour à l'accueil
-          </button>
-        </div>
-      </main>
+      <ErrorPanel
+        icon={Clock}
+        tone="warning"
+        eyebrow="Paiement en attente"
+        title="La confirmation de votre paiement se fait attendre"
+        details={pendingOrder?.orderNumber ? [{ label: 'Référence', value: pendingOrder.orderNumber }] : undefined}
+        primary={{ label: 'Nous contacter', href: contactHref, icon: Mail }}
+        secondary={{ label: "Retour à l'accueil", href: '/' }}
+        helpHref={null}
+      >
+        <p>L&apos;opérateur ne nous a pas encore confirmé le paiement. Dès qu&apos;il sera validé, vous recevrez vos liens de téléchargement par e-mail.</p>
+        <p>Votre compte a été débité mais vous n&apos;avez rien reçu d&apos;ici une heure ? Écrivez-nous avec la référence de la commande.</p>
+      </ErrorPanel>
     );
   }
 

@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/lib/env';
+import { apiFetch, responseError } from './errors';
 
 export type ReportReason = 'piracy' | 'malware' | 'scam' | 'illegal' | 'broken' | 'other';
 
@@ -17,7 +18,7 @@ export async function submitReport(data: {
   details?: string;
   email?: string;
 }): Promise<void> {
-  const res = await fetch(`${getApiUrl()}/reports`, {
+  const res = await apiFetch(`${getApiUrl()}/reports`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -26,8 +27,6 @@ export async function submitReport(data: {
     throw new Error('Vous avez envoyé beaucoup de signalements : réessayez dans une heure.');
   }
   if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    const message = Array.isArray(error.message) ? error.message[0] : error.message;
-    throw new Error(message || 'Le signalement n’a pas pu être envoyé. Réessayez.');
+    throw await responseError(res, 'Le signalement n’a pas pu être envoyé. Réessayez.');
   }
 }
