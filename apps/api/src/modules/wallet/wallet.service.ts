@@ -4,6 +4,7 @@ import { PrismaService } from '@/prisma';
 import { EmailService } from '../email/email.service';
 import { SellersService } from '../sellers/sellers.service';
 import { RequestWithdrawalDto, UpdateMarketplaceSettingsDto } from './dto/wallet.dto';
+import { BLOCKING_DISPUTE_STATUSES } from '../disputes/dispute-rules';
 
 type Db = Prisma.TransactionClient | PrismaService;
 
@@ -19,8 +20,19 @@ export interface CreditedSale {
   availableAt: Date;
 }
 
+/** Mouvement d'un article en litige : son montant reste bloqué tant que le litige est ouvert. */
+const DISPUTED = {
+  orderItem: { is: { dispute: { is: { status: { in: BLOCKING_DISPUTE_STATUSES } } } } },
+} satisfies Prisma.WalletEntryWhereInput;
+
 const ENTRY_INCLUDE = {
-  orderItem: { select: { product: { select: { name: true } }, order: { select: { orderNumber: true } } } },
+  orderItem: {
+    select: {
+      product: { select: { name: true } },
+      order: { select: { orderNumber: true } },
+      dispute: { select: { reference: true, status: true } },
+    },
+  },
   withdrawal: { select: { operator: true, phone: true, status: true, transferReference: true } },
 } satisfies Prisma.WalletEntryInclude;
 
@@ -131,7 +143,20 @@ export class WalletService {
    * même date de disponibilité (pendant le délai de sécurité, le vendeur ne voit jamais l'argent).
    */
   async refundOrder(tx: Prisma.TransactionClient, orderId: string): Promise<number> {
-    const sales = await tx.walletEntry.findMany({ where: { type: 'sale', orderItem: { orderId } } });
+    const count = await this.refundSales(tx, { type: 'sale', orderItem: { orderId } });
+    this.logger.log(`Commande ${orderId} remboursée : ${count} vente(s) annulée(s) chez les vendeurs`);
+    return count;
+  }
+
+  /** Remboursement d'un seul article (litige accordé) : même principe que pour une commande entière. */
+  async refundOrderItem(tx: Prisma.TransactionClient, orderItemId: string): Promise<number> {
+    const count = await this.refundSales(tx, { type: 'sale', orderItemId });
+    this.logger.log(`Article ${orderItemId} remboursé : ${count} vente annulée chez le vendeur`);
+    return count;
+  }
+
+  private async refundSales(tx: Prisma.TransactionClient, where: Prisma.WalletEntryWhereInput): Promise<number> {
+    const sales = await tx.walletEntry.findMany({ where });
     if (sales.length === 0) return 0;
     const created = await tx.walletEntry.createMany({
       data: sales.map((sale) => ({
@@ -146,25 +171,32 @@ export class WalletService {
       })),
       skipDuplicates: true,
     });
-    this.logger.log(`Commande ${orderId} remboursée : ${created.count} vente(s) annulée(s) chez les vendeurs`);
     return created.count;
   }
 
   // ── Solde et historique du vendeur ──────────────────────────────────
 
-  /** Solde retirable (ventes passées le délai, moins les retraits) et solde encore en attente. */
+  /**
+   * Solde retirable (ventes passées le délai, moins les retraits), solde encore en attente, et montant
+   * bloqué par des litiges en cours (compté ni dans l'un ni dans l'autre, même après le délai).
+   */
   async balanceOf(sellerId: string, db: Db = this.prisma) {
     const now = new Date();
+    const sum = async (where: Prisma.WalletEntryWhereInput) =>
+      (await db.walletEntry.aggregate({ where: { sellerId, ...where }, _sum: { amount: true } }))._sum.amount ?? 0;
     // L'une après l'autre : la fonction sert aussi dans une transaction.
-    const available = await db.walletEntry.aggregate({ where: { sellerId, availableAt: { lte: now } }, _sum: { amount: true } });
-    const pending = await db.walletEntry.aggregate({ where: { sellerId, availableAt: { gt: now } }, _sum: { amount: true } });
-    const availableAmount = available._sum.amount ?? 0;
-    const pendingAmount = pending._sum.amount ?? 0;
-    return { available: availableAmount, pending: pendingAmount, total: availableAmount + pendingAmount };
+    const availableAll = await sum({ availableAt: { lte: now } });
+    const pendingAll = await sum({ availableAt: { gt: now } });
+    const blockedAvailable = await sum({ availableAt: { lte: now }, ...DISPUTED });
+    const blockedPending = await sum({ availableAt: { gt: now }, ...DISPUTED });
+    const available = availableAll - blockedAvailable;
+    const pending = pendingAll - blockedPending;
+    const blocked = blockedAvailable + blockedPending;
+    return { available, pending, blocked, total: available + pending + blocked };
   }
 
   async summaryFor(sellerId: string) {
-    const [seller, settings, balance, sales, refunds, paidOut, pendingWithdrawal, nextRelease, identity] = await Promise.all([
+    const [seller, settings, balance, sales, refunds, paidOut, pendingWithdrawal, nextRelease, identity, openDisputes] = await Promise.all([
       this.prisma.seller.findUnique({ where: { id: sellerId }, select: { status: true, phone: true } }),
       this.getSettings(),
       this.balanceOf(sellerId),
@@ -172,8 +204,9 @@ export class WalletService {
       this.prisma.walletEntry.aggregate({ where: { sellerId, type: 'refund' }, _sum: { grossAmount: true, commission: true, amount: true }, _count: true }),
       this.prisma.withdrawal.aggregate({ where: { sellerId, status: 'paid' }, _sum: { amount: true } }),
       this.prisma.withdrawal.findFirst({ where: { sellerId, status: 'pending' } }),
-      this.prisma.walletEntry.findFirst({ where: { sellerId, availableAt: { gt: new Date() } }, orderBy: { availableAt: 'asc' } }),
+      this.prisma.walletEntry.findFirst({ where: { sellerId, availableAt: { gt: new Date() }, NOT: DISPUTED }, orderBy: { availableAt: 'asc' } }),
       this.prisma.identityCheck.findFirst({ where: { sellerId }, orderBy: { createdAt: 'desc' }, select: { status: true, fullName: true } }),
+      this.prisma.dispute.count({ where: { sellerId, status: { in: BLOCKING_DISPUTE_STATUSES } } }),
     ]);
 
     const identityStatus = identity?.status ?? 'none';
@@ -192,6 +225,7 @@ export class WalletService {
     return {
       balance: { ...balance, withdrawable },
       nextRelease: nextRelease ? { date: nextRelease.availableAt } : null,
+      openDisputes,
       stats: {
         salesCount: sales._count - refunds._count,
         grossSales: (sales._sum.grossAmount ?? 0) + (refunds._sum.grossAmount ?? 0),
@@ -237,6 +271,11 @@ export class WalletService {
         createdAt: e.createdAt,
         productName: e.orderItem?.product.name ?? null,
         orderNumber: e.orderItem?.order.orderNumber ?? null,
+        // Vente en litige : montant bloqué jusqu'à la décision.
+        dispute:
+          e.type === 'sale' && e.orderItem?.dispute && BLOCKING_DISPUTE_STATUSES.includes(e.orderItem.dispute.status)
+            ? { reference: e.orderItem.dispute.reference }
+            : null,
         withdrawal: e.withdrawal
           ? { operator: e.withdrawal.operator, phone: e.withdrawal.phone, status: e.withdrawal.status, reference: e.withdrawal.transferReference }
           : null,

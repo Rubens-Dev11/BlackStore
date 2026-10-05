@@ -82,7 +82,8 @@ export class EmailService {
         <h2>Bonjour ${EmailService.escapeHtml(customerName)},</h2>
         <p>Merci pour votre achat ! Voici vos liens de téléchargement :</p>
         <ul>${productList}</ul>
-        <p>Un problème avec un fichier ? <a href="${this.storefrontUrl()}/contact?sujet=order">Écrivez-nous</a>.</p>
+        <p>Un problème avec un fichier ? <a href="${this.storefrontUrl()}/contact?sujet=order">Écrivez-nous</a>.
+          Produit inutilisable ou non conforme ? <a href="${this.storefrontUrl()}/remboursements/demande">Demandez un remboursement</a> dans les 7 jours.</p>
       `;
 
       await this.transporter.sendMail({
@@ -155,8 +156,10 @@ export class EmailService {
             </p>
             <p style="color:#999;font-size:12px;">
               Un problème avec votre commande ?
-              <a href="${this.storefrontUrl()}/contact?sujet=order&amp;commande=${encodeURIComponent(data.orderNumber)}" style="color:#f97316;">Écrivez-nous</a>
-              (voir aussi notre <a href="${this.storefrontUrl()}/remboursements" style="color:#f97316;">politique de remboursement</a>).
+              <a href="${this.storefrontUrl()}/contact?sujet=order&amp;commande=${encodeURIComponent(data.orderNumber)}" style="color:#f97316;">Écrivez-nous</a>.
+              Produit inutilisable ou non conforme ?
+              <a href="${this.storefrontUrl()}/remboursements/demande?commande=${encodeURIComponent(data.orderNumber)}" style="color:#f97316;">Demandez un remboursement</a>
+              dans les 7 jours (voir la <a href="${this.storefrontUrl()}/remboursements" style="color:#f97316;">politique de remboursement</a>).
             </p>
             <p style="color:#999;font-size:12px;">© 2026 BlackStore — Produits Numériques</p>
           </div>
@@ -420,6 +423,174 @@ export class EmailService {
           'Le montant est revenu dans votre solde : vous pouvez faire une nouvelle demande.',
         ],
         button: { label: 'Voir mes gains', url: `${this.sellerAppUrl()}/vendeur/gains` },
+      }),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Litiges (demandes de remboursement)
+  // ─────────────────────────────────────────────
+
+  private async sendBuyerMail(to: string, subject: string, html: string): Promise<void> {
+    try {
+      await this.transporter.sendMail({ from: this.fromAddress, to, subject, html });
+      this.logger.log(`E-mail client « ${subject} » envoyé à ${to}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Échec envoi e-mail client à ${to}: ${message}`);
+    }
+  }
+
+  private static multiline(value: string): string {
+    return EmailService.escapeHtml(value).replace(/\n/g, '<br>');
+  }
+
+  private static frenchDate(date: Date): string {
+    return date.toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Douala' });
+  }
+
+  /** « +237699001234 » → « +2376•••••234 ». */
+  private static maskPhone(phone: string): string {
+    return phone.length > 8 ? `${phone.slice(0, 5)}•••••${phone.slice(-3)}` : phone;
+  }
+
+  /** Accusé de réception d'une demande de remboursement, avec sa référence. */
+  async sendDisputeReceived(
+    to: string,
+    name: string,
+    dispute: { reference: string; productName: string; reasonLabel: string; sellerDeadline: Date | null },
+  ): Promise<void> {
+    await this.sendBuyerMail(
+      to,
+      `Demande de remboursement ${dispute.reference} enregistrée — BlackStore`,
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(name)},`,
+          `Nous avons bien reçu votre demande de remboursement pour « ${EmailService.escapeHtml(dispute.productName)} » (${EmailService.escapeHtml(dispute.reasonLabel)}).`,
+          `Référence : <strong>${dispute.reference}</strong>`,
+          dispute.sellerDeadline
+            ? `Le vendeur a jusqu'au ${EmailService.frenchDate(dispute.sellerDeadline)} pour vous répondre ou corriger son produit. Notre équipe prend ensuite la décision et vous écrit, en général sous 5 jours ouvrés.`
+            : 'Notre équipe examine votre demande et vous répond par e-mail, en général sous 5 jours ouvrés.',
+          'Si la demande est acceptée, le montant vous est renvoyé par Mobile Money sous 10 jours ouvrés.',
+        ],
+        note: `Gardez cette référence : indiquez-la si vous nous écrivez (${this.storefrontUrl()}/contact).`,
+      }),
+    );
+  }
+
+  /** Le vendeur est prévenu d'un litige sur son produit et du délai pour répondre. */
+  async sendSellerDisputeOpened(
+    to: string,
+    firstName: string,
+    dispute: { reference: string; productName: string; reasonLabel: string; description: string; deadline: Date },
+  ): Promise<void> {
+    await this.sendSellerMail(
+      to,
+      `Litige ${dispute.reference} sur « ${dispute.productName} » : répondez sous 5 jours — BlackStore`,
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(firstName)},`,
+          `Un acheteur demande le remboursement de « ${EmailService.escapeHtml(dispute.productName)} ». Motif : ${EmailService.escapeHtml(dispute.reasonLabel)}.`,
+          `<em>${EmailService.multiline(dispute.description)}</em>`,
+          `Répondez avant le <strong>${EmailService.frenchDate(dispute.deadline)}</strong> : expliquez la situation, corrigez votre produit si besoin (le nouveau fichier est analysé puis livré), ou acceptez le remboursement. Sans réponse, notre équipe décidera seule.`,
+          'Pendant le litige, le montant de cette vente reste bloqué dans votre solde.',
+        ],
+        button: { label: 'Répondre au litige', url: `${this.sellerAppUrl()}/vendeur/litiges` },
+      }),
+    );
+  }
+
+  /** Décision sur la demande : remboursement accordé (montant, compte) ou refus (motif). */
+  async sendDisputeDecision(
+    to: string,
+    name: string,
+    decision: {
+      reference: string;
+      productName: string;
+      accepted: boolean;
+      amount: number;
+      operatorLabel: string;
+      phone: string;
+      note: string | null;
+    },
+  ): Promise<void> {
+    const product = `« ${EmailService.escapeHtml(decision.productName)} »`;
+    const note = decision.note ? [`<em>${EmailService.multiline(decision.note)}</em>`] : [];
+    const html = decision.accepted
+      ? EmailService.sellerLayout({
+          lines: [
+            `Bonjour ${EmailService.escapeHtml(name)},`,
+            `Votre demande ${decision.reference} concernant ${product} est <strong>acceptée</strong>.`,
+            ...note,
+            `Nous vous renvoyons <strong>${EmailService.fcfa(decision.amount)}</strong> sur votre compte ${EmailService.escapeHtml(decision.operatorLabel)} (${EmailService.maskPhone(decision.phone)}) sous 10 jours ouvrés. Vous recevrez un e-mail avec la référence de l'envoi.`,
+            'Les liens de téléchargement de ce produit ne fonctionnent plus.',
+          ],
+        })
+      : EmailService.sellerLayout({
+          lines: [
+            `Bonjour ${EmailService.escapeHtml(name)},`,
+            `Après examen, votre demande ${decision.reference} concernant ${product} n'est pas acceptée. Motif :`,
+            ...note,
+            "Vos liens de téléchargement restent valables jusqu'à leur date d'expiration.",
+          ],
+          note: `Une question ? Écrivez-nous en indiquant la référence ${decision.reference} : ${this.storefrontUrl()}/contact`,
+        });
+    await this.sendBuyerMail(
+      to,
+      decision.accepted ? `Remboursement accordé (${decision.reference}) — BlackStore` : `Demande de remboursement ${decision.reference} refusée — BlackStore`,
+      html,
+    );
+  }
+
+  /** Issue du litige pour le vendeur : vente retirée de son solde, ou montant débloqué. */
+  async sendSellerDisputeDecision(
+    to: string,
+    firstName: string,
+    decision: { reference: string; productName: string; accepted: boolean; sellerAmount: number | null; note: string | null },
+  ): Promise<void> {
+    const product = `« ${EmailService.escapeHtml(decision.productName)} »`;
+    const amount = decision.sellerAmount !== null ? ` (${EmailService.fcfa(decision.sellerAmount)})` : '';
+    const note = decision.note ? [`<em>${EmailService.multiline(decision.note)}</em>`] : [];
+    await this.sendSellerMail(
+      to,
+      decision.accepted ? `Litige ${decision.reference} : acheteur remboursé — BlackStore` : `Litige ${decision.reference} clos sans remboursement — BlackStore`,
+      EmailService.sellerLayout({
+        lines: decision.accepted
+          ? [
+              `Bonjour ${EmailService.escapeHtml(firstName)},`,
+              `Le litige ${decision.reference} sur ${product} s'est conclu par le remboursement de l'acheteur.`,
+              ...note,
+              `La vente${amount} est retirée de votre solde, comme le prévoient les conditions vendeurs.`,
+            ]
+          : [
+              `Bonjour ${EmailService.escapeHtml(firstName)},`,
+              `Le litige ${decision.reference} sur ${product} est clos : l'acheteur n'est pas remboursé.`,
+              ...note,
+              `Le montant de la vente${amount} n'est plus bloqué : il devient retirable selon le délai de sécurité habituel.`,
+            ],
+        button: { label: 'Voir mes litiges', url: `${this.sellerAppUrl()}/vendeur/litiges` },
+      }),
+    );
+  }
+
+  /** Reçu : l'argent du remboursement a été envoyé. */
+  async sendDisputeRefunded(
+    to: string,
+    name: string,
+    refund: { reference: string; productName: string; amount: number; operatorLabel: string; phone: string; transferReference: string },
+  ): Promise<void> {
+    await this.sendBuyerMail(
+      to,
+      `Remboursement envoyé (${refund.reference}) — BlackStore`,
+      EmailService.sellerLayout({
+        lines: [
+          `Bonjour ${EmailService.escapeHtml(name)},`,
+          `Nous vous avons renvoyé <strong>${EmailService.fcfa(refund.amount)}</strong> pour « ${EmailService.escapeHtml(refund.productName)} » (demande ${refund.reference}).`,
+          `Compte : ${EmailService.escapeHtml(refund.operatorLabel)} (${EmailService.maskPhone(refund.phone)})<br>` +
+            `Référence de l'envoi : <strong>${EmailService.escapeHtml(refund.transferReference)}</strong>`,
+          "Vous ne voyez pas l'argent sous 48 heures ? Écrivez-nous en indiquant ces références.",
+        ],
+        note: `${this.storefrontUrl()}/contact`,
       }),
     );
   }

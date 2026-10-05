@@ -258,6 +258,12 @@ export class OrdersService {
         data: { status: 'refunded' },
       });
       await this.walletService.refundOrder(tx, id);
+      // Litige en cours sur la commande : le remboursement est accordé ; il reste à noter l'envoi de
+      // l'argent dans « Litiges » (référence Mobile Money), ce qui prévient le client.
+      await tx.dispute.updateMany({
+        where: { orderItem: { orderId: id }, status: { in: ['open', 'review'] } },
+        data: { status: 'accepted', decidedAt: new Date(), decisionNote: 'Commande remboursée depuis la page Commandes.' },
+      });
       return refunded;
     });
   }
@@ -271,13 +277,14 @@ export class OrdersService {
       );
     }
 
+    // Les liens d'un article remboursé (litige accordé) restent coupés.
     const downloadTokens = await this.prisma.downloadToken.findMany({
-      where: { orderItem: { orderId: id } },
+      where: { orderItem: { orderId: id }, isActive: true },
       include: { orderItem: { include: { product: true } } },
     });
 
     if (downloadTokens.length === 0) {
-      throw new ConflictException('Aucun lien de téléchargement trouvé pour cette commande');
+      throw new ConflictException('Aucun lien de téléchargement actif pour cette commande');
     }
 
     // Renvoyer des liens déjà expirés ou épuisés ne servirait à rien : chaque

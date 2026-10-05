@@ -9,6 +9,7 @@ import type { ValidationError } from 'class-validator';
 
 /** Nom affiché de chaque champ (les noms techniques restent en anglais dans le code). */
 const LABELS: Record<string, string> = {
+  acceptRefund: 'accord pour le remboursement',
   acceptTerms: 'acceptation des conditions',
   accountName: 'nom du titulaire',
   action: 'action',
@@ -59,6 +60,7 @@ const LABELS: Record<string, string> = {
   niu: 'NIU',
   note: 'note',
   operator: 'opérateur',
+  orderItemId: 'produit',
   orderNumber: 'numéro de commande',
   originalPrice: 'prix barré',
   page: 'page',
@@ -72,6 +74,9 @@ const LABELS: Record<string, string> = {
   rccm: 'RCCM',
   reason: 'motif',
   reference: 'référence',
+  refundAccountName: 'titulaire du compte Mobile Money',
+  refundOperator: 'opérateur Mobile Money',
+  refundPhone: 'numéro Mobile Money',
   reply: 'réponse',
   seoDescription: 'description pour les moteurs de recherche',
   seoTitle: 'titre pour les moteurs de recherche',

@@ -25,6 +25,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
 import { LegalModule } from './modules/legal/legal.module';
 import { SupportModule } from './modules/support/support.module';
 import { BackupsModule } from './modules/backups/backups.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { BackupsModule } from './modules/backups/backups.module';
     LegalModule,
     SupportModule,
     BackupsModule,
+    DisputesModule,
   ],
 })
 export class AppModule {}

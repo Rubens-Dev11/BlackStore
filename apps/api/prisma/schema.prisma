@@ -198,6 +198,7 @@ model OrderItem {
   priceAtPurchase Int                                  @map("price_at_purchase")
   downloadTokens  DownloadToken[]
   walletEntries   WalletEntry[]
+  dispute         Dispute?
   createdAt       DateTime        @default(now())      @map("created_at")
 
   @@map("order_items")
@@ -281,6 +282,7 @@ model Seller {
   identityChecks  IdentityCheck[]
   walletEntries   WalletEntry[]
   withdrawals     Withdrawal[]
+  disputes        Dispute[]
   createdAt       DateTime      @default(now())        @map("created_at")
   updatedAt       DateTime      @updatedAt             @map("updated_at")
 
@@ -456,6 +458,55 @@ enum WithdrawalStatus {
   paid      // argent envoyé
   rejected  // refusé par l'administrateur
   cancelled // annulé par le vendeur
+}
+
+/// Litige : demande de remboursement d'un acheteur sur un article payé. Le vendeur répond ou corrige son
+/// produit sous 5 jours, puis l'administrateur décide. Tant que le litige est ouvert (open, review), le
+/// montant de la vente reste bloqué chez le vendeur. Une seule demande par article.
+model Dispute {
+  id                  String              @id @default(uuid())
+  reference           String              @unique @db.VarChar(20)                   // LIT-2026-12345
+  orderItemId         String              @unique                @map("order_item_id")
+  orderItem           OrderItem           @relation(fields: [orderItemId], references: [id])
+  sellerId            String?                                    @map("seller_id")  // absent : produit BlackStore
+  seller              Seller?             @relation(fields: [sellerId], references: [id])
+  reason              DisputeReason
+  description         String              @db.VarChar(3000)
+  refundOperator      MobileMoneyOperator                        @map("refund_operator")
+  refundPhone         String              @db.VarChar(20)        @map("refund_phone")        // +2376XXXXXXXX
+  refundAccountName   String              @db.VarChar(160)       @map("refund_account_name")
+  status              DisputeStatus       @default(open)
+  sellerDeadline      DateTime?                                  @map("seller_deadline")
+  sellerResponse      String?             @db.VarChar(3000)      @map("seller_response")
+  sellerAcceptsRefund Boolean?                                   @map("seller_accepts_refund")
+  sellerRespondedAt   DateTime?                                  @map("seller_responded_at")
+  decisionNote        String?             @db.VarChar(1000)      @map("decision_note")       // motif d'un refus, message au client
+  decidedAt           DateTime?                                  @map("decided_at")
+  refundReference     String?             @db.VarChar(100)       @map("refund_reference")    // référence de l'envoi Mobile Money
+  refundedAt          DateTime?                                  @map("refunded_at")
+  ipHash              String?             @db.VarChar(64)        @map("ip_hash")
+  createdAt           DateTime            @default(now())        @map("created_at")
+  updatedAt           DateTime            @updatedAt             @map("updated_at")
+
+  @@index([status])
+  @@index([sellerId, status])
+  @@map("disputes")
+}
+
+enum DisputeReason {
+  unusable         // fichier vide, abîmé ou qui ne fonctionne pas
+  not_as_described // très différent de sa description
+  not_received     // liens jamais reçus ou inutilisables
+  double_payment   // commande payée deux fois
+  removed          // produit retiré du site après l'achat (piraté, dangereux)
+}
+
+enum DisputeStatus {
+  open     // en attente de la réponse du vendeur (5 jours)
+  review   // à décider par l'administrateur
+  accepted // remboursement accordé : argent à renvoyer au client
+  refunded // remboursement envoyé (référence saisie)
+  rejected // demande refusée (motif envoyé au client)
 }
 
 enum IdentityDocumentType {
