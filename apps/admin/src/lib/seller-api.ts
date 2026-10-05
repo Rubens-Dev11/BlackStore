@@ -227,8 +227,11 @@ export interface MarketplaceSettings {
 }
 
 export interface WalletSummary {
-  balance: { available: number; pending: number; total: number; withdrawable: number };
+  /** blocked : ventes en litige, comptées ni dans le retirable ni dans l'attente jusqu'à la décision. */
+  balance: { available: number; pending: number; blocked: number; total: number; withdrawable: number };
   nextRelease: { date: string } | null;
+  /** Litiges en cours sur les produits du vendeur. */
+  openDisputes: number;
   stats: { salesCount: number; grossSales: number; commissions: number; netEarnings: number; withdrawn: number };
   settings: MarketplaceSettings;
   identity: { status: IdentityCheckStatus | 'none'; fullName: string | null };
@@ -254,4 +257,47 @@ export interface WalletEntry {
   productName: string | null;
   orderNumber: string | null;
   withdrawal: { operator: MobileMoneyOperator; phone: string; status: WithdrawalStatus; reference: string | null } | null;
+  /** Vente en litige : montant bloqué jusqu'à la décision. */
+  dispute: { reference: string } | null;
+}
+
+// ── Litiges (demandes de remboursement) ─────────────────────────────────
+
+export type DisputeStatus = 'open' | 'review' | 'accepted' | 'refunded' | 'rejected';
+export type DisputeReason = 'unusable' | 'not_as_described' | 'not_received' | 'double_payment' | 'removed';
+
+export const DISPUTE_STATUS_LABELS: Record<DisputeStatus, { label: string; tone: 'gray' | 'yellow' | 'green' | 'red' | 'blue' }> = {
+  open: { label: 'Réponse du vendeur attendue', tone: 'yellow' },
+  review: { label: 'Décision de BlackStore attendue', tone: 'blue' },
+  accepted: { label: 'Remboursement accordé', tone: 'red' },
+  refunded: { label: 'Acheteur remboursé', tone: 'gray' },
+  rejected: { label: 'Clos sans remboursement', tone: 'green' },
+};
+
+/** Litige vu par le vendeur (l'administrateur voit en plus l'acheteur et le compte de remboursement). */
+export interface SellerDispute {
+  id: string;
+  reference: string;
+  status: DisputeStatus;
+  reason: DisputeReason;
+  reasonLabel: string;
+  description: string;
+  createdAt: string;
+  sellerDeadline: string | null;
+  /** Délai du vendeur dépassé sans réponse. */
+  late: boolean;
+  sellerResponse: string | null;
+  sellerAcceptsRefund: boolean | null;
+  sellerRespondedAt: string | null;
+  decisionNote: string | null;
+  decidedAt: string | null;
+  productName: string;
+  orderNumber: string;
+  /** Prénom et initiale de l'acheteur. */
+  buyerName: string;
+  paidAt: string;
+  amount: number;
+  /** Part du vendeur sur la vente (commission déduite), bloquée pendant le litige. */
+  sellerAmount: number | null;
+  canRespond: boolean;
 }

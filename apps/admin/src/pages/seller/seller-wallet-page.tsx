@@ -132,6 +132,15 @@ export function SellerWalletPage() {
         />
         <Card label="Déjà retiré" value={formatFcfa(stats.withdrawn)} />
       </div>
+      {balance.blocked > 0 && (
+        <p className="rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2 text-sm text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+          <strong>{formatFcfa(balance.blocked)}</strong> sont bloqués par {wallet.openDisputes > 1 ? `${wallet.openDisputes} litiges` : 'un litige'} en
+          cours, jusqu'à la décision de BlackStore.{' '}
+          <Link to="/vendeur/litiges" className="font-medium underline">
+            Voir mes litiges
+          </Link>
+        </p>
+      )}
       <p className="text-sm text-muted-foreground">
         {stats.salesCount} vente{stats.salesCount > 1 ? 's' : ''} pour {formatFcfa(stats.grossSales)} ; commissions BlackStore :{' '}
         {formatFcfa(stats.commissions)} ; vos gains : <strong className="text-foreground">{formatFcfa(stats.netEarnings)}</strong>. Commission
@@ -252,7 +261,15 @@ export function SellerWalletPage() {
                       {formatFcfa(entry.amount)}
                     </td>
                     <td className="whitespace-nowrap py-2 text-xs text-muted-foreground">
-                      {entry.available ? 'Disponible' : `Le ${formatDate(entry.availableAt)}`}
+                      {entry.dispute ? (
+                        <Link to="/vendeur/litiges" className="font-medium text-yellow-700 underline dark:text-yellow-300" title={`Litige ${entry.dispute.reference}`}>
+                          Bloqué (litige)
+                        </Link>
+                      ) : entry.available ? (
+                        'Disponible'
+                      ) : (
+                        `Le ${formatDate(entry.availableAt)}`
+                      )}
                     </td>
                   </tr>
                 ))}

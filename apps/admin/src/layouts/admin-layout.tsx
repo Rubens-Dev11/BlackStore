@@ -18,6 +18,7 @@ const navItems = [
   { to: '/messages', label: 'Messages' },
   { to: '/identites', label: 'Identités' },
   { to: '/retraits', label: 'Retraits' },
+  { to: '/litiges', label: 'Litiges' },
   { to: '/reglages', label: 'Réglages' },
   { to: '/sauvegardes', label: 'Sauvegardes' },
   { to: '/compte', label: 'Mon compte' },
@@ -50,6 +51,12 @@ export function AdminLayout() {
     enabled: _hasHydrated && !!accessToken && role !== 'seller',
     refetchInterval: 60_000,
   });
+  const { data: todoDisputes } = useQuery({
+    queryKey: ['admin-disputes', 'todo'],
+    queryFn: () => api.get<unknown[]>('/admin/disputes?filter=todo', accessToken),
+    enabled: _hasHydrated && !!accessToken && role !== 'seller',
+    refetchInterval: 60_000,
+  });
   const { data: openMessages } = useQuery({
     queryKey: ['admin-messages', 'open'],
     queryFn: () => api.get<unknown[]>('/admin/messages?status=open', accessToken),
@@ -71,6 +78,7 @@ export function AdminLayout() {
     '/sauvegardes': backupHealth && !backupHealth.healthy ? 1 : 0,
     '/identites': pendingIdentities?.length ?? 0,
     '/retraits': pendingWithdrawals?.length ?? 0,
+    '/litiges': todoDisputes?.length ?? 0,
   };
 
   if (!_hasHydrated) {

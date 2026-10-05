@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { PageErrorBoundary } from '@/components/page-error-boundary';
+import { api } from '@/lib/api';
+import type { SellerDispute } from '@/lib/seller-api';
 import { getApiUrl } from '@/lib/env';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { useSellerPageTitle } from './seller-auth-card';
@@ -10,6 +13,7 @@ const navItems = [
   { to: '/vendeur/boutique', label: 'Ma boutique', end: false },
   { to: '/vendeur/produits', label: 'Mes produits', end: false },
   { to: '/vendeur/gains', label: 'Mes gains', end: false },
+  { to: '/vendeur/litiges', label: 'Litiges', end: false },
   { to: '/vendeur/identite', label: "Vérification d'identité", end: false },
   { to: '/vendeur/compte', label: 'Mon compte', end: false },
 ];
@@ -20,6 +24,24 @@ export function SellerLayout() {
   useSellerPageTitle('Espace vendeur');
   const { pathname } = useLocation();
   const mobileNav = useRef<HTMLElement>(null);
+  // Pastille du menu : litiges qui attendent la réponse du vendeur.
+  const { data: disputes } = useQuery({
+    queryKey: ['seller-disputes'],
+    queryFn: () => api.get<SellerDispute[]>('/seller/disputes', accessToken),
+    enabled: _hasHydrated && !!accessToken && role === 'seller',
+    refetchInterval: 5 * 60_000,
+  });
+  const badges: Record<string, number> = {
+    '/vendeur/litiges': disputes?.filter((d) => d.canRespond).length ?? 0,
+  };
+  const label = (item: (typeof navItems)[number]) => (
+    <>
+      {item.label}
+      {(badges[item.to] ?? 0) > 0 && (
+        <span className="ml-2 rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-semibold text-white">{badges[item.to]}</span>
+      )}
+    </>
+  );
 
   // Sur téléphone, la rubrique ouverte reste visible dans la barre de menu.
   useEffect(() => {
@@ -56,7 +78,7 @@ export function SellerLayout() {
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
-              {item.label}
+              {label(item)}
             </NavLink>
           ))}
         </nav>
@@ -75,7 +97,7 @@ export function SellerLayout() {
         <nav ref={mobileNav} className="flex gap-1 overflow-x-auto border-b bg-background px-4 py-2 md:hidden print:hidden">
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className={(state) => `${linkClass(state)} shrink-0 whitespace-nowrap`}>
-              {item.label}
+              {label(item)}
             </NavLink>
           ))}
         </nav>
