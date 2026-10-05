@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import type { ComponentProps } from 'react';
 import { Ban, Clock, Download, FileX, LayoutGrid, Link2Off, Mail, RotateCw, ShieldCheck } from 'lucide-react';
 import { ErrorPanel } from '@/components/errors/error-panel';
@@ -68,7 +69,21 @@ function describe(status: DownloadStatus, fileUrl: string): ComponentProps<typeo
         details,
         primary: { label: 'Télécharger', externalHref: fileUrl, icon: Download },
         secondary: CATALOGUE,
-        children: <p>Le téléchargement démarre dès que vous appuyez sur le bouton. Chaque appui compte comme un téléchargement.</p>,
+        children: (
+          <>
+            <p>Le téléchargement démarre dès que vous appuyez sur le bouton. Chaque appui compte comme un téléchargement.</p>
+            <p className="text-sm">
+              Le fichier ne fonctionne pas ou ne correspond pas à sa description ?{' '}
+              <Link
+                href={`/remboursements/demande${status.commande ? `?commande=${encodeURIComponent(status.commande)}` : ''}`}
+                className="font-medium text-orange-400 hover:underline"
+              >
+                Demandez un remboursement
+              </Link>{' '}
+              dans les 7 jours qui suivent l&apos;achat.
+            </p>
+          </>
+        ),
       };
     }
     case 'verification':

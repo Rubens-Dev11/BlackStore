@@ -67,8 +67,15 @@ export function ContactForm({ initialTopic, initialOrderNumber }: Props) {
           ))}
         </select>
         {form.topic === 'refund' && (
-          <p className="mt-1 text-xs text-zinc-500">
-            Lisez d'abord la <Link href="/remboursements" className="text-orange-400 hover:underline">politique de remboursement</Link> : demande dans les 7 jours qui suivent l'achat.
+          <p className="mt-2 rounded-lg border border-orange-900/60 bg-orange-950/30 px-3 py-2 text-sm text-orange-200">
+            Pour demander le remboursement d'un produit acheté, utilisez le{' '}
+            <Link
+              href={`/remboursements/demande${/^BS-\d{4}-\d{5}$/i.test(form.orderNumber) ? `?commande=${form.orderNumber.toUpperCase()}` : ''}`}
+              className="font-semibold text-orange-400 hover:underline"
+            >
+              formulaire de remboursement
+            </Link>{' '}
+            : votre demande est suivie jusqu'au versement. Ce formulaire-ci sert aux autres questions (par exemple un débit sans commande confirmée).
           </p>
         )}
       </div>

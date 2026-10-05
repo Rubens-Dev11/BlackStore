@@ -43,6 +43,7 @@ export default async function PrivacyPage() {
           <li><strong className="text-zinc-200">Visiteurs</strong> : adresse IP, type de navigateur, produits consultés, origine de la visite (lien de campagne). Pour les statistiques, l'adresse IP est transformée de façon irréversible.</li>
           <li><strong className="text-zinc-200">Acheteurs</strong> : nom, adresse e-mail, téléphone (facultatif), produits achetés, montant, référence et date du paiement ; pour un avis, l'e-mail, la note et le commentaire.</li>
           <li><strong className="text-zinc-200">Signalements et messages</strong> : contenu du message, adresse e-mail (facultative pour un signalement), numéro de commande cité.</li>
+          <li><strong className="text-zinc-200">Demandes de remboursement</strong> : produit concerné, motif et description du problème, numéro Mobile Money et nom du titulaire du compte qui recevra l'argent, réponse du vendeur et décision.</li>
           <li><strong className="text-zinc-200">Vendeurs</strong> : nom, prénom, e-mail, téléphone, mot de passe (enregistré sous une forme chiffrée irréversible), boutique (nom, description, logo, liens vers vos réseaux, WhatsApp), produits, ventes, retraits (numéro Mobile Money et nom du titulaire).</li>
           <li><strong className="text-zinc-200">Vérification d'identité des vendeurs</strong> : type de pièce, nom inscrit dessus, photos de la pièce (recto, verso) et selfie avec la pièce.</li>
           <li><strong className="text-zinc-200">Paiement</strong> : il est traité par notre prestataire de paiement ; nous recevons seulement le résultat et la référence de la transaction, jamais votre code secret.</li>
@@ -68,7 +69,10 @@ export default async function PrivacyPage() {
           <li>Notre hébergeur : les données sont stockées sur un serveur situé à Douala, au Cameroun ; les e-mails partent de notre propre serveur de messagerie.</li>
           <li>Les autorités, uniquement quand la loi l'exige.</li>
         </ul>
-        <p>Les vendeurs ne reçoivent pas vos données d'acheteur : ils voient seulement le produit vendu, le montant et le numéro de commande.</p>
+        <p>
+          Les vendeurs ne reçoivent pas vos données d'acheteur : ils voient seulement le produit vendu, le montant et le numéro de commande ; pour une
+          demande de remboursement, votre prénom, l'initiale de votre nom et la description du problème, jamais votre e-mail ni votre numéro.
+        </p>
       </LegalSection>
 
       <LegalSection title="5. Données hors du Cameroun">
@@ -84,6 +88,7 @@ export default async function PrivacyPage() {
           <table className="w-full text-left">
             <tbody>
               <tr><td className={CELL}>Commandes et pièces comptables</td><td className={CELL}>10 ans (obligation comptable)</td></tr>
+              <tr><td className={CELL}>Demandes de remboursement</td><td className={CELL}>10 ans, avec la commande (obligation comptable)</td></tr>
               <tr><td className={CELL}>Compte vendeur</td><td className={CELL}>tant qu'il est ouvert, puis 3 ans pour les éventuels litiges</td></tr>
               <tr><td className={CELL}>Photos des pièces d'identité</td><td className={CELL}>effacées dès qu'une vérification est refusée ; sinon gardées tant que le compte est ouvert, et au plus 1 an après sa fermeture</td></tr>
               <tr><td className={CELL}>Messages de contact et signalements</td><td className={CELL}>2 ans après leur traitement</td></tr>

@@ -106,12 +106,19 @@ export default async function SellerTermsPage() {
         </ul>
       </LegalSection>
 
-      <LegalSection title="9. Remboursements">
-        <p>
-          Quand un acheteur est remboursé selon la <Link href="/remboursements" className={LINK}>politique de remboursement</Link>, la vente est
-          retirée de votre solde. Si vous avez déjà retiré cet argent, votre solde devient négatif et se rééquilibre avec vos ventes suivantes.
-          En cas de fraude, BlackStore peut vous réclamer les sommes concernées.
-        </p>
+      <LegalSection title="9. Remboursements et litiges">
+        <ul className={LIST}>
+          <li>
+            Quand un acheteur demande le remboursement d'un de vos produits, vous êtes prévenu par e-mail. Vous avez 5 jours pour répondre depuis
+            « Litiges » dans votre espace vendeur : expliquer la situation, corriger votre produit ou accepter le remboursement. BlackStore décide
+            ensuite, selon la <Link href="/remboursements" className={LINK}>politique de remboursement</Link>.
+          </li>
+          <li>Pendant le litige, le montant de cette vente reste bloqué dans votre solde, même après le délai de sécurité.</li>
+          <li>
+            Si l'acheteur est remboursé, la vente est retirée de votre solde. Si vous avez déjà retiré cet argent, votre solde devient négatif et se
+            rééquilibre avec vos ventes suivantes. En cas de fraude, BlackStore peut vous réclamer les sommes concernées.
+          </li>
+        </ul>
       </LegalSection>
 
       <LegalSection title="10. Vos engagements">

@@ -59,21 +59,37 @@ export default async function RefundsPage() {
 
       <LegalSection title="3. Comment demander un remboursement">
         <p>
-          Utilisez le <Link href="/contact?sujet=refund" className={LINK}>formulaire de contact</Link>, sujet « Demande de remboursement », dans les
-          7 jours qui suivent l'achat. Indiquez :
+          Remplissez le <Link href="/remboursements/demande" className={LINK}>formulaire de demande de remboursement</Link> dans les 7 jours qui
+          suivent l'achat (30 jours pour un double paiement). Il vous demande :
         </p>
         <ul className={LIST}>
-          <li>votre numéro de commande (il commence par BS-, il figure dans l'e-mail de confirmation) ;</li>
-          <li>l'adresse e-mail utilisée pour la commande ;</li>
-          <li>le problème rencontré (une capture d'écran du message d'erreur aide beaucoup).</li>
+          <li>votre numéro de commande (il commence par BS-, il figure dans l'e-mail de confirmation) et l'adresse e-mail utilisée pour la commande ;</li>
+          <li>le produit concerné et le problème rencontré (le message d'erreur affiché aide beaucoup) ;</li>
+          <li>le compte Mobile Money qui recevra le remboursement : celui qui a servi au paiement, ou un autre compte à votre nom.</li>
         </ul>
+        <p>
+          Vous recevez aussitôt un e-mail avec la référence de votre demande (elle commence par LIT-). Débité sans commande confirmée ? Écrivez-nous
+          depuis le <Link href="/contact?sujet=refund" className={LINK}>formulaire de contact</Link>.
+        </p>
+        <p>
+          <Link
+            href="/remboursements/demande"
+            className="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          >
+            Demander un remboursement
+          </Link>
+        </p>
       </LegalSection>
 
       <LegalSection title="4. Traitement de la demande">
         <ul className={LIST}>
-          <li>Nous vous répondons par e-mail sous 5 jours ouvrés. Nous pouvons demander des précisions au vendeur, ou lui laisser 5 jours pour corriger son produit.</li>
-          <li>Si la demande est acceptée, le montant payé vous est renvoyé par Mobile Money, sur le numéro qui a servi au paiement ou sur un autre numéro à votre nom que vous nous indiquez, sous 10 jours ouvrés.</li>
-          <li>Les liens de téléchargement de la commande remboursée cessent alors de fonctionner.</li>
+          <li>
+            Le vendeur est prévenu : il a 5 jours pour vous répondre, corriger son produit ou accepter le remboursement. Pour un produit vendu par
+            BlackStore, notre équipe examine directement la demande.
+          </li>
+          <li>Notre équipe prend ensuite la décision et vous l'annonce par e-mail, en général sous 5 jours ouvrés.</li>
+          <li>Si la demande est acceptée, le montant payé vous est renvoyé par Mobile Money sous 10 jours ouvrés ; un e-mail vous donne la référence de l'envoi.</li>
+          <li>Les liens de téléchargement du produit remboursé cessent alors de fonctionner.</li>
           <li>La vente est retirée du solde du vendeur, comme le prévoient les <Link href="/conditions-vendeurs" className={LINK}>conditions vendeurs</Link>.</li>
         </ul>
       </LegalSection>
