@@ -31,8 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
     });
 
-    // Un jeton émis avant le dernier changement de mot de passe n'est plus valable.
-    if (!admin || !admin.isActive || payload.pwd !== passwordStamp(admin.passwordHash)) {
+    // Un jeton émis avant le dernier changement de mot de passe n'est plus valable, ni aucun jeton
+    // tant que le mot de passe doit être remplacé.
+    if (!admin || !admin.isActive || admin.mustChangePassword || payload.pwd !== passwordStamp(admin.passwordHash)) {
       throw new UnauthorizedException();
     }
 

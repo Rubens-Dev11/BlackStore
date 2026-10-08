@@ -248,10 +248,31 @@ model Admin {
   passwordHash String    @db.VarChar(255)          @map("password_hash")
   lastLogin    DateTime?                            @map("last_login")
   isActive     Boolean   @default(true)             @map("is_active")
+  /// Mot de passe à remplacer : la connexion demande alors un code envoyé par e-mail.
+  mustChangePassword Boolean @default(false)        @map("must_change_password")
   createdAt    DateTime  @default(now())            @map("created_at")
   updatedAt    DateTime  @updatedAt                 @map("updated_at")
 
+  passwordChallenges AdminPasswordChallenge[]
+
   @@map("admins")
+}
+
+/// Changement obligatoire du mot de passe : code à 6 chiffres envoyé à l'adresse de l'admin.
+/// Seules les empreintes du jeton et du code sont gardées.
+model AdminPasswordChallenge {
+  id        String    @id @default(uuid())
+  adminId   String    @map("admin_id")
+  tokenHash String    @unique @db.VarChar(64) @map("token_hash")
+  codeHash  String    @db.VarChar(64) @map("code_hash")
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@map("admin_password_challenges")
 }
 
 // ─────────────────────────────────────────────

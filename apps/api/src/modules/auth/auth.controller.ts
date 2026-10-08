@@ -4,7 +4,10 @@ import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ConfirmPasswordChangeDto } from './dto/confirm-password-change.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { IpThrottlerGuard } from './guards/ip-throttler.guard';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
@@ -18,23 +21,45 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Connexion administrateur' })
-  @ApiResponse({ status: 200, description: 'Connexion réussie' })
-  @ApiResponse({ status: 401, description: 'Identifiants invalides' })
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken } = await this.authService.login(loginDto);
-
-    // Set refresh token in httpOnly cookie (optional, for compatibility)
+  private setRefreshCookie(res: Response, refreshToken: string) {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+  }
 
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(IpThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Connexion administrateur' })
+  @ApiResponse({ status: 200, description: 'Connexion réussie, ou code de sécurité envoyé si le mot de passe doit être remplacé (passwordChangeRequired)' })
+  @ApiResponse({ status: 401, description: 'Identifiants invalides' })
+  @ApiResponse({ status: 429, description: 'Trop de tentatives, ou code déjà envoyé il y a moins d’une minute' })
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(loginDto);
+    if ('passwordChangeRequired' in result) {
+      return result;
+    }
+
+    this.setRefreshCookie(res, result.refreshToken);
     this.logger.log(`Login réussi pour l'email: ${loginDto.email}`);
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken };
+  }
+
+  @Post('password/confirm')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(IpThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Remplacer le mot de passe avec le code reçu par e-mail, puis ouvrir la session' })
+  @ApiResponse({ status: 200, description: 'Mot de passe remplacé, session ouverte' })
+  @ApiResponse({ status: 400, description: 'Code incorrect (essais restants) ou nouveau mot de passe refusé' })
+  @ApiResponse({ status: 410, description: 'Code expiré, déjà utilisé ou essais épuisés' })
+  async confirmPasswordChange(@Body() dto: ConfirmPasswordChangeDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken } = await this.authService.confirmPasswordChange(dto);
+    this.setRefreshCookie(res, refreshToken);
     return { accessToken, refreshToken };
   }
 

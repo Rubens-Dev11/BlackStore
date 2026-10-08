@@ -430,6 +430,39 @@ export class EmailService {
   }
 
   // ─────────────────────────────────────────────
+  // Administration
+  // ─────────────────────────────────────────────
+
+  /**
+   * Code de sécurité demandé avant de remplacer un mot de passe admin à changer.
+   * Renvoie false si l'e-mail n'a pas pu partir : sans ce code, l'admin ne peut pas se connecter.
+   */
+  async sendAdminPasswordCode(to: string, code: string, minutes: number): Promise<boolean> {
+    const subject = 'Votre code de sécurité — BlackStore Admin';
+    try {
+      await this.transporter.sendMail({
+        from: this.fromAddress,
+        to,
+        subject,
+        html: EmailService.sellerLayout({
+          lines: [
+            'Bonjour,',
+            "Quelqu'un vient de se connecter à l'admin BlackStore avec le bon mot de passe. Par sécurité, ce mot de passe doit être remplacé : saisissez ce code sur la page de connexion, puis choisissez votre nouveau mot de passe.",
+            `<span style="font-size:32px;font-weight:bold;letter-spacing:6px;color:#f97316;">${code}</span>`,
+          ],
+          note: `Ce code est valable ${minutes} minutes. Si ce n'est pas vous qui venez de vous connecter, quelqu'un connaît votre ancien mot de passe : ne transmettez ce code à personne, sans lui il ne peut pas entrer.`,
+        }),
+      });
+      this.logger.log(`E-mail admin « ${subject} » envoyé à ${to}`);
+      return true;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Échec envoi du code de sécurité admin à ${to}: ${message}`);
+      return false;
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // Espace client
   // ─────────────────────────────────────────────
 
