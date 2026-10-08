@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { formatFcfa } from '@/lib/format';
@@ -163,6 +164,13 @@ export function OrderSuccessClient() {
             </div>
           ))}
         </div>
+        <p className="mt-8 text-gray-300">
+          Retrouvez ces achats à tout moment dans{' '}
+          <Link href="/mon-espace" className="font-semibold text-orange-400 hover:underline">
+            votre espace « Mes achats »
+          </Link>
+          , avec l&apos;adresse {order.buyerEmail}.
+        </p>
       </div>
     </main>
   );

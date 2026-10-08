@@ -41,7 +41,7 @@ export default async function PrivacyPage() {
       <LegalSection title="2. Données collectées">
         <ul className={LIST}>
           <li><strong className="text-zinc-200">Visiteurs</strong> : adresse IP, type de navigateur, produits consultés, origine de la visite (lien de campagne). Pour les statistiques, l'adresse IP est transformée de façon irréversible.</li>
-          <li><strong className="text-zinc-200">Acheteurs</strong> : nom, adresse e-mail, téléphone (facultatif), produits achetés, montant, référence et date du paiement ; pour un avis, l'e-mail, la note et le commentaire.</li>
+          <li><strong className="text-zinc-200">Acheteurs</strong> : nom, adresse e-mail, téléphone (facultatif), produits achetés, montant, référence et date du paiement ; pour un avis, l'e-mail, la note et le commentaire ; pour l'espace client, la date des liens de connexion et des sessions (le lien lui-même n'est pas conservé en clair).</li>
           <li><strong className="text-zinc-200">Signalements et messages</strong> : contenu du message, adresse e-mail (facultative pour un signalement), numéro de commande cité.</li>
           <li><strong className="text-zinc-200">Demandes de remboursement</strong> : produit concerné, motif et description du problème, numéro Mobile Money et nom du titulaire du compte qui recevra l'argent, réponse du vendeur et décision.</li>
           <li><strong className="text-zinc-200">Vendeurs</strong> : nom, prénom, e-mail, téléphone, mot de passe (enregistré sous une forme chiffrée irréversible), boutique (nom, description, logo, liens vers vos réseaux, WhatsApp), produits, ventes, retraits (numéro Mobile Money et nom du titulaire).</li>
@@ -95,6 +95,7 @@ export default async function PrivacyPage() {
               <tr><td className={CELL}>Statistiques de visite (adresse IP transformée)</td><td className={CELL}>13 mois</td></tr>
               <tr><td className={CELL}>Journaux techniques du serveur</td><td className={CELL}>environ 15 jours</td></tr>
               <tr><td className={CELL}>Liens de téléchargement</td><td className={CELL}>valables 72 heures en général</td></tr>
+              <tr><td className={CELL}>Espace client : liens de connexion et sessions</td><td className={CELL}>30 minutes et 30 jours, puis effacés automatiquement</td></tr>
             </tbody>
           </table>
         </div>
@@ -130,6 +131,7 @@ export default async function PrivacyPage() {
           <li>Aucun cookie publicitaire ni outil de suivi tiers.</li>
           <li>La boutique garde votre panier et votre commande en cours dans la mémoire de votre navigateur.</li>
           <li>L'espace vendeur utilise un cookie de session et garde votre connexion dans votre navigateur.</li>
+          <li>L'espace client « Mes achats » garde votre session (30 jours) dans la mémoire de votre navigateur ; « Se déconnecter » l'efface.</li>
           <li>Vous pouvez effacer ces informations à tout moment dans les réglages de votre navigateur.</li>
         </ul>
       </LegalSection>

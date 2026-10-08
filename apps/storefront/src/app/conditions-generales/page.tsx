@@ -66,6 +66,10 @@ export default async function TermsPage() {
             ces limites figurent dans l'e-mail. Téléchargez et gardez votre fichier dès réception.
           </li>
           <li>
+            Vos achats restent consultables dans votre espace <Link href="/mon-espace" className={LINK}>« Mes achats »</Link>, ouvert par un lien
+            envoyé à l'adresse e-mail de la commande.
+          </li>
+          <li>
             E-mail non reçu (pensez aux courriers indésirables) ou lien expiré : <Link href="/contact?sujet=order" className={LINK}>écrivez-nous</Link>{' '}
             avec votre numéro de commande.
           </li>

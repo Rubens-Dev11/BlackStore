@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ShoppingCart, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useCartStore } from '@/stores/use-cart-store';
@@ -10,6 +11,9 @@ export function Header() {
   const itemCount = useCartStore((state) => state.getItemCount());
 
   useEffect(() => setMounted(true), []);
+  // Le menu du téléphone se referme quand on change de page.
+  const pathname = usePathname();
+  useEffect(() => setIsMenuOpen(false), [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
@@ -32,6 +36,9 @@ export function Header() {
           <Link href="/" className="text-sm text-zinc-400 transition-colors hover:text-white">
             Accueil
           </Link>
+          <Link href="/mon-espace" className="text-sm text-zinc-400 transition-colors hover:text-white">
+            Mes achats
+          </Link>
           <Link
             href="/panier"
             className="relative text-zinc-400 transition-colors hover:text-white"
@@ -53,6 +60,9 @@ export function Header() {
           <div className="w-full max-w-xs space-y-4">
             <Link href="/" className="block px-4 py-3 text-left text-base font-medium text-white hover:text-orange-500">
               Accueil
+            </Link>
+            <Link href="/mon-espace" className="block px-4 py-3 text-left text-base font-medium text-white hover:text-orange-500">
+              Mes achats
             </Link>
             <Link
               href="/panier"
