@@ -7,6 +7,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { PUBLIC_PRODUCT_WHERE } from '../products/product-visibility';
 import { WalletService } from '../wallet/wallet.service';
 import { LEGAL_VERSION } from '../legal/legal-version';
+import { PromoCodesService, PromoUnit } from '../promo-codes/promo-codes.service';
 
 @Injectable()
 export class OrdersService {
@@ -16,10 +17,11 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly walletService: WalletService,
+    private readonly promoCodesService: PromoCodesService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
-    const { items, ...orderData } = createOrderDto;
+    const { items, promoCode, ...orderData } = createOrderDto;
 
     const products = await this.prisma.product.findMany({
       // Seuls les produits visibles sur le site s'achètent (vendeur validé, fichier vérifié…).
@@ -31,22 +33,32 @@ export class OrdersService {
     }
 
     // Chaque OrderItem = 1 unité. Si quantity > 1, on crée plusieurs OrderItem.
-    const orderItemsData: { productId: string; priceAtPurchase: number }[] = [];
+    const units: PromoUnit[] = [];
     for (const item of items) {
       const product = products.find((p: Product) => p.id === item.productId);
       if (!product) {
         throw new ConflictException(`Produit introuvable : ${item.productId}`);
       }
       for (let i = 0; i < item.quantity; i++) {
-        orderItemsData.push({ productId: item.productId, priceAtPurchase: product.price });
+        units.push({ productId: item.productId, price: product.price, storeId: product.storeId });
       }
     }
-
-    const totalAmount = orderItemsData.reduce((sum, item) => sum + item.priceAtPurchase, 0);
 
     const orderNumber = `BS-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const order = await this.prisma.$transaction(async (prisma: Prisma.TransactionClient) => {
+      // Le code promo est vérifié et compté dans cette transaction : la réduction est déduite du prix
+      // payé de chaque article concerné.
+      const promo = promoCode?.trim()
+        ? await this.promoCodesService.applyToOrder(prisma, promoCode, orderData.customerEmail, units)
+        : null;
+      const orderItemsData = units.map((unit, i) => {
+        const discountAmount = promo?.discounts[i] ?? 0;
+        return { productId: unit.productId, priceAtPurchase: unit.price - discountAmount, discountAmount };
+      });
+      const totalAmount = orderItemsData.reduce((sum, item) => sum + item.priceAtPurchase, 0);
+      const discountAmount = orderItemsData.reduce((sum, item) => sum + item.discountAmount, 0);
+
       const createdOrder = await prisma.order.create({
         data: {
           orderNumber,
@@ -63,6 +75,9 @@ export class OrdersService {
           utmCampaign: orderData.utm_campaign,
           utmContent: orderData.utm_content,
           referrerUrl: orderData.referrer_url,
+          promoCodeId: promo?.promoCodeId,
+          promoCodeText: promo?.promoCodeText,
+          discountAmount,
         },
       });
 
@@ -71,6 +86,7 @@ export class OrdersService {
           orderId: createdOrder.id,
           productId: item.productId,
           priceAtPurchase: item.priceAtPurchase,
+          discountAmount: item.discountAmount,
         })),
       });
 
@@ -80,11 +96,13 @@ export class OrdersService {
       }
 
       return createdOrder;
-    });
+      // Plusieurs commandes avec le même code attendent leur tour (verrou du code) : on leur laisse le
+      // temps d'obtenir une connexion au lieu des 2 secondes par défaut.
+    }, { maxWait: 10_000, timeout: 20_000 });
 
-    this.logger.log(`Commande créée : ${order.id} — ${orderNumber}`);
+    this.logger.log(`Commande créée : ${order.id} — ${orderNumber}${order.promoCodeText ? ` (code ${order.promoCodeText})` : ''}`);
     // Send purchase emails for free orders (download + confirmation)
-    if (totalAmount === 0) {
+    if (order.totalAmount === 0) {
       this.sendPurchaseEmails(order.id).catch((err) => this.logger.error(`sendPurchaseEmails a échoué pour la commande ${order.id}`, err));
     }
     return this.findOne(order.id);
@@ -186,6 +204,7 @@ export class OrdersService {
         orderNumber: order.orderNumber,
         items: emailItems,
         totalAmount: Number(order.totalAmount),
+        discount: order.promoCodeText ? { code: order.promoCodeText, amount: order.discountAmount } : null,
       });
     } catch (error) {
       this.logger.error(`Échec de l'envoi de l'email de confirmation de commande pour la commande ${orderId}`, error);
@@ -362,6 +381,8 @@ export class OrdersService {
         buyerEmail: true,
         buyerPhone: true,
         totalAmount: true,
+        promoCodeText: true,
+        discountAmount: true,
         status: true,
         paymentMethod: true,
         createdAt: true,
@@ -374,6 +395,8 @@ export class OrdersService {
       'Email',
       'Téléphone',
       'Montant (FCFA)',
+      'Code promo',
+      'Réduction (FCFA)',
       'Statut',
       'Méthode paiement',
       'Date',
@@ -386,6 +409,8 @@ export class OrdersService {
         order.buyerEmail,
         order.buyerPhone ?? '',
         order.totalAmount,
+        order.promoCodeText ?? '',
+        order.discountAmount,
         order.status,
         order.paymentMethod ?? '—',
         order.createdAt.toISOString(),

@@ -112,8 +112,13 @@ export class EmailService {
       maxDownloads: number;
     }>;
     totalAmount: number;
+    /** Code promo appliqué et réduction obtenue. */
+    discount?: { code: string; amount: number } | null;
   }): Promise<void> {
     try {
+      const discountLine = data.discount?.amount
+        ? `<p>Code promo <strong>${EmailService.escapeHtml(data.discount.code)}</strong> : −${data.discount.amount.toLocaleString('fr-FR')} FCFA déduits.</p>`
+        : '';
       const tokenLinks = data.items.map(item => `
         <tr>
           <td style="padding:8px;border:1px solid #333;">${EmailService.escapeHtml(item.productName)}</td>
@@ -140,6 +145,7 @@ export class EmailService {
             <h2>Merci ${EmailService.escapeHtml(data.buyerName)} !</h2>
             <p>Votre commande <strong>${data.orderNumber}</strong> a été confirmée.</p>
             <p>Montant total : <strong>${data.totalAmount.toLocaleString('fr-FR')} FCFA</strong></p>
+            ${discountLine}
             <h3>Vos téléchargements :</h3>
             <table style="width:100%;border-collapse:collapse;">
               <thead>

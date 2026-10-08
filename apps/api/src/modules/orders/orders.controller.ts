@@ -67,6 +67,20 @@ export class OrdersController {
     return this.ordersService.findByNumberPublic(orderNumber, email);
   }
 
+  // Déclarée avant « :id » : sinon « export » est pris pour un identifiant de commande (404).
+  @Get('export')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Exporter les commandes en CSV' })
+  @ApiResponse({ status: 200, description: 'Fichier CSV' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async exportCsv(@Res() res: Response) {
+    const csv = await this.ordersService.exportCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="commandes.csv"');
+    res.send('\uFEFF' + csv); // BOM UTF-8 pour Excel
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -100,18 +114,6 @@ export class OrdersController {
   @ApiResponse({ status: 409, description: 'Conflit' })
   async resendDownload(@Param('id') id: string) {
     return this.ordersService.resendDownload(id);
-  }
-  @Get('export')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Exporter les commandes en CSV' })
-  @ApiResponse({ status: 200, description: 'Fichier CSV' })
-  @ApiResponse({ status: 401, description: 'Non autorisé' })
-  async exportCsv(@Res() res: Response) {
-    const csv = await this.ordersService.exportCsv();
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="commandes.csv"');
-    res.send('\uFEFF' + csv); // BOM UTF-8 pour Excel
   }
 }
 

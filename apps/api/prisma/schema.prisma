@@ -146,6 +146,32 @@ enum ReportStatus {
 // ─────────────────────────────────────────────
 // COMMANDE
 // ─────────────────────────────────────────────
+enum PromoDiscountType {
+  percent
+  amount
+}
+
+/// Code promo d'une boutique, ou de BlackStore (storeId vide) pour ses propres produits. Il ne réduit que
+/// les produits de son propriétaire ; un seul code par commande.
+model PromoCode {
+  id              String            @id @default(uuid())
+  code            String            @unique @db.VarChar(30)       // en majuscules
+  storeId         String?                                          @map("store_id")
+  store           Store?            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  discountType    PromoDiscountType                                @map("discount_type")
+  value           Int               // pourcentage (1 à 100) ou montant en FCFA, déduit une fois par commande
+  maxUses         Int?                                             @map("max_uses")
+  oncePerCustomer Boolean           @default(false)                @map("once_per_customer")
+  expiresAt       DateTime?                                        @map("expires_at")
+  isActive        Boolean           @default(true)                 @map("is_active")
+  orders          Order[]
+  createdAt       DateTime          @default(now())                @map("created_at")
+  updatedAt       DateTime          @updatedAt                     @map("updated_at")
+
+  @@index([storeId])
+  @@map("promo_codes")
+}
+
 enum OrderStatus {
   pending
   paid
@@ -178,11 +204,17 @@ model Order {
   // Version des conditions générales acceptées au moment de la commande.
   termsVersion     String?        @db.VarChar(20)        @map("terms_version")
   termsAcceptedAt  DateTime?                             @map("terms_accepted_at")
+  // Code promo appliqué (texte gardé même si le code est supprimé) et réduction totale.
+  promoCodeId      String?                               @map("promo_code_id")
+  promoCode        PromoCode?     @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  promoCodeText    String?        @db.VarChar(30)        @map("promo_code_text")
+  discountAmount   Int            @default(0)            @map("discount_amount")
   items            OrderItem[]
   createdAt        DateTime       @default(now())        @map("created_at")
   paidAt           DateTime?                             @map("paid_at")
   updatedAt        DateTime       @updatedAt             @map("updated_at")
 
+  @@index([promoCodeId])
   @@map("orders")
 }
 
@@ -195,7 +227,9 @@ model OrderItem {
   order           Order           @relation(fields: [orderId], references: [id])
   productId       String                               @map("product_id")
   product         Product         @relation(fields: [productId], references: [id])
+  // Prix payé, réduction déduite : c'est lui qui compte pour les gains du vendeur et les remboursements.
   priceAtPurchase Int                                  @map("price_at_purchase")
+  discountAmount  Int             @default(0)          @map("discount_amount")
   downloadTokens  DownloadToken[]
   walletEntries   WalletEntry[]
   dispute         Dispute?
@@ -604,6 +638,7 @@ model Store {
   tiktokUrl    String?   @db.VarChar(200)         @map("tiktok_url")
   whatsapp     String?   @db.VarChar(20)
   products     Product[]
+  promoCodes   PromoCode[]
   createdAt    DateTime  @default(now())          @map("created_at")
   updatedAt    DateTime  @updatedAt               @map("updated_at")
 

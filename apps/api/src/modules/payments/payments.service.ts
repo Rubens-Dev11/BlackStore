@@ -241,6 +241,7 @@ export class PaymentsService {
       orderNumber: order.orderNumber,
       items: emailItems,
       totalAmount: Number(order.totalAmount),
+      discount: order.promoCodeText ? { code: order.promoCodeText, amount: order.discountAmount } : null,
     });
 
     this.logger.log(`Paiement confirmé pour la commande ${order.id} — Email envoyé`);

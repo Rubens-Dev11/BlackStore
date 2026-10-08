@@ -27,6 +27,7 @@ import { SupportModule } from './modules/support/support.module';
 import { BackupsModule } from './modules/backups/backups.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { PromoCodesModule } from './modules/promo-codes/promo-codes.module';
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { CustomersModule } from './modules/customers/customers.module';
     BackupsModule,
     DisputesModule,
     CustomersModule,
+    PromoCodesModule,
   ],
 })
 export class AppModule {}
