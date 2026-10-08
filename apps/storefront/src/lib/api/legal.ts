@@ -12,7 +12,7 @@ export interface LegalInfo {
 
 /** Valeurs de repli si l'API ne répond pas : les pages restent lisibles. */
 const FALLBACK: LegalInfo = {
-  version: '2026-10-08',
+  version: '2026-10-09',
   operator: { name: null, form: null, address: null, rccm: null, niu: null },
   contact: { email: null, phone: null },
   hosting: null,

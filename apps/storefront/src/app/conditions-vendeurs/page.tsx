@@ -86,6 +86,11 @@ export default async function SellerTermsPage() {
         <ul className={LIST}>
           <li>BlackStore prélève {rate} % du prix de chaque vente payée. La commission est déduite automatiquement et affichée dans « Mes gains ».</li>
           <li>Chaque vente garde le taux en vigueur au moment du paiement. Un nouveau taux s'applique seulement aux ventes suivantes, et vous est annoncé par e-mail 15 jours à l'avance.</li>
+          <li>
+            Codes promo : vous pouvez créer dans votre espace des codes de réduction valables sur les produits de votre boutique. La
+            réduction est à votre charge : la commission est calculée sur le prix réellement payé par le client, votre solde est crédité
+            de ce prix moins la commission, et un remboursement rend au client ce même prix.
+          </li>
         </ul>
       </LegalSection>
 

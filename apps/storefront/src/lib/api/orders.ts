@@ -14,6 +14,8 @@ export interface CreateOrderPayload {
   referrer_url?: string;
   /** Conditions générales de vente acceptées (case à cocher). */
   acceptTerms: true;
+  /** Code promo (un seul par commande). */
+  promoCode?: string;
 }
 
 export interface OrderCreatedResponse {
@@ -23,6 +25,8 @@ export interface OrderCreatedResponse {
   buyerEmail: string;
   buyerPhone: string;
   totalAmount: number;
+  discountAmount: number;
+  promoCodeText: string | null;
   status: string;
   createdAt: string;
 }

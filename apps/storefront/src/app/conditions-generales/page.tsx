@@ -55,6 +55,12 @@ export default async function TermsPage() {
           <li>Les prix sont indiqués en francs CFA (FCFA) et fixés par chaque vendeur. Le prix affiché est le prix total à payer : BlackStore n'ajoute aucun frais.</li>
           <li>Le paiement se fait par Mobile Money (Orange Money, MTN Mobile Money) auprès de notre prestataire de paiement agréé. BlackStore ne voit jamais votre code secret.</li>
           <li>Un produit gratuit s'obtient sans paiement, après avoir indiqué votre adresse e-mail.</li>
+          <li>
+            Codes promo : un vendeur peut proposer un code de réduction valable sur les produits de sa boutique, et BlackStore sur les
+            produits qu'il vend lui-même. Un seul code par commande, aux conditions fixées par son auteur (date de fin, nombre
+            d'utilisations, une fois par client). La réduction est affichée avant le paiement ; en cas de remboursement, c'est le montant
+            réellement payé qui vous est rendu.
+          </li>
         </ul>
       </LegalSection>
 
