@@ -41,6 +41,34 @@ const tokenInclude = {
   orderItem: { include: { product: true, order: { select: { status: true, orderNumber: true } } } },
 } as const;
 
+/** Ce que le calcul de l'état d'un lien lit (jeton, commande, fichier du produit). */
+export interface DownloadTokenFacts {
+  isActive: boolean;
+  expiresAt: Date;
+  downloadCount: number;
+  maxDownloads: number;
+  orderItem: {
+    order: { status: string };
+    product: { filePath: string | null; storeId: string | null; scanStatus: string | null };
+  };
+}
+
+/** État d'un lien de téléchargement (aussi affiché dans l'espace client). */
+export function downloadState(downloadToken: DownloadTokenFacts | null): DownloadState {
+  if (!downloadToken) return 'introuvable';
+  // Lien désactivé, ou commande remboursée (ou jamais payée) : il ne sert plus.
+  if (!downloadToken.isActive || downloadToken.orderItem.order.status !== 'paid') return 'annule';
+  if (downloadToken.expiresAt < new Date()) return 'expire';
+  if (downloadToken.downloadCount >= downloadToken.maxDownloads) return 'quota';
+  // Fichier d'un vendeur : servi seulement après l'antivirus (un fichier remplacé est réanalysé).
+  const product = downloadToken.orderItem.product;
+  if (!product.filePath) return 'indisponible';
+  if (product.storeId && product.scanStatus !== 'clean') {
+    return product.scanStatus === 'pending' ? 'verification' : 'indisponible';
+  }
+  return 'valide';
+}
+
 @Injectable()
 export class DownloadsService {
   private readonly logger = new Logger(DownloadsService.name);
@@ -58,18 +86,7 @@ export class DownloadsService {
   }
 
   private stateOf(downloadToken: Awaited<ReturnType<DownloadsService['findToken']>>): DownloadState {
-    if (!downloadToken) return 'introuvable';
-    // Lien désactivé, ou commande remboursée (ou jamais payée) : il ne sert plus.
-    if (!downloadToken.isActive || downloadToken.orderItem.order.status !== 'paid') return 'annule';
-    if (downloadToken.expiresAt < new Date()) return 'expire';
-    if (downloadToken.downloadCount >= downloadToken.maxDownloads) return 'quota';
-    // Fichier d'un vendeur : servi seulement après l'antivirus (un fichier remplacé est réanalysé).
-    const product = downloadToken.orderItem.product;
-    if (!product.filePath) return 'indisponible';
-    if (product.storeId && product.scanStatus !== 'clean') {
-      return product.scanStatus === 'pending' ? 'verification' : 'indisponible';
-    }
-    return 'valide';
+    return downloadState(downloadToken);
   }
 
   /** État d'un lien, pour la page explicative de la boutique (aucun téléchargement compté). */

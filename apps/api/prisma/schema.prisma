@@ -460,6 +460,33 @@ enum WithdrawalStatus {
   cancelled // annulé par le vendeur
 }
 
+/// Lien de connexion à l'espace client, envoyé par e-mail : 30 minutes, une seule utilisation.
+/// Seule l'empreinte du jeton est gardée.
+model CustomerLoginToken {
+  id        String    @id @default(uuid())
+  email     String    @db.VarChar(150)                     // en minuscules
+  tokenHash String    @unique @db.VarChar(64)  @map("token_hash")
+  expiresAt DateTime                           @map("expires_at")
+  usedAt    DateTime?                          @map("used_at")
+  createdAt DateTime  @default(now())          @map("created_at")
+
+  @@index([email, createdAt])
+  @@map("customer_login_tokens")
+}
+
+/// Session de l'espace client (30 jours sur l'appareil), ouverte par un lien de connexion.
+model CustomerSession {
+  id         String   @id @default(uuid())
+  email      String   @db.VarChar(150)                    // en minuscules
+  tokenHash  String   @unique @db.VarChar(64) @map("token_hash")
+  expiresAt  DateTime                         @map("expires_at")
+  lastUsedAt DateTime @default(now())         @map("last_used_at")
+  createdAt  DateTime @default(now())         @map("created_at")
+
+  @@index([email])
+  @@map("customer_sessions")
+}
+
 /// Litige : demande de remboursement d'un acheteur sur un article payé. Le vendeur répond ou corrige son
 /// produit sous 5 jours, puis l'administrateur décide. Tant que le litige est ouvert (open, review), le
 /// montant de la vente reste bloqué chez le vendeur. Une seule demande par article.

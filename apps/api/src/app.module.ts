@@ -26,6 +26,7 @@ import { LegalModule } from './modules/legal/legal.module';
 import { SupportModule } from './modules/support/support.module';
 import { BackupsModule } from './modules/backups/backups.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
+import { CustomersModule } from './modules/customers/customers.module';
 
 @Module({
   imports: [
@@ -105,6 +106,7 @@ import { DisputesModule } from './modules/disputes/disputes.module';
     SupportModule,
     BackupsModule,
     DisputesModule,
+    CustomersModule,
   ],
 })
 export class AppModule {}

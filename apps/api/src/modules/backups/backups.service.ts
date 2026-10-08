@@ -231,7 +231,7 @@ export class BackupsService implements OnApplicationBootstrap {
       const result = await this.retentionService.purge();
       return await this.finishRun(run.id, {
         status: 'success',
-        details: `supprimés : ${result.messages} message(s) de contact, ${result.reports} signalement(s), ${result.pageViews} visite(s)`,
+        details: `supprimés : ${result.messages} message(s) de contact, ${result.reports} signalement(s), ${result.pageViews} visite(s), ${result.clientAccess} accès à l’espace client expiré(s)`,
       });
     } catch (error) {
       this.logger.error(`Purge des données anciennes en échec : ${errorMessage(error)}`);

@@ -41,12 +41,12 @@ export class EmailService {
   }
 
   /**
-   * Lien personnel de téléchargement : passe par l'API, qui vérifie l'expiration
-   * et le quota du jeton avant de rediriger vers le fichier.
+   * Lien personnel de téléchargement : il ouvre la page du lien sur la boutique, où le client appuie sur
+   * « Télécharger ». Les messageries qui ouvrent les liens pour les analyser ne consomment donc pas les
+   * téléchargements (seul le bouton les compte).
    */
   private downloadUrl(token: string): string {
-    const base = this.configService.get<string>('API_PUBLIC_URL', 'http://localhost:3000');
-    return `${base.replace(/\/+$/, '')}/downloads/${token}`;
+    return `${this.storefrontUrl()}/telechargement/${token}`;
   }
 
   private static formatExpiry(date: Date): string {
@@ -82,6 +82,7 @@ export class EmailService {
         <h2>Bonjour ${EmailService.escapeHtml(customerName)},</h2>
         <p>Merci pour votre achat ! Voici vos liens de téléchargement :</p>
         <ul>${productList}</ul>
+        <p>Retrouvez tous vos achats à tout moment dans <a href="${this.storefrontUrl()}/mon-espace">votre espace client</a>.</p>
         <p>Un problème avec un fichier ? <a href="${this.storefrontUrl()}/contact?sujet=order">Écrivez-nous</a>.
           Produit inutilisable ou non conforme ? <a href="${this.storefrontUrl()}/remboursements/demande">Demandez un remboursement</a> dans les 7 jours.</p>
       `;
@@ -152,7 +153,8 @@ export class EmailService {
               <tbody>${tokenLinks}</tbody>
             </table>
             <p style="margin-top:24px;color:#999;font-size:12px;">
-              Ces liens sont personnels : ne les partagez pas.
+              Ces liens sont personnels : ne les partagez pas. Retrouvez tous vos achats dans
+              <a href="${this.storefrontUrl()}/mon-espace" style="color:#f97316;">votre espace client</a>.
             </p>
             <p style="color:#999;font-size:12px;">
               Un problème avec votre commande ?
@@ -423,6 +425,26 @@ export class EmailService {
           'Le montant est revenu dans votre solde : vous pouvez faire une nouvelle demande.',
         ],
         button: { label: 'Voir mes gains', url: `${this.sellerAppUrl()}/vendeur/gains` },
+      }),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // Espace client
+  // ─────────────────────────────────────────────
+
+  /** Lien de connexion à l'espace client (sans mot de passe). */
+  async sendClientLoginLink(to: string, link: string, minutes: number): Promise<void> {
+    await this.sendBuyerMail(
+      to,
+      'Votre lien de connexion à votre espace — BlackStore',
+      EmailService.sellerLayout({
+        lines: [
+          'Bonjour,',
+          'Voici votre lien pour ouvrir votre espace client : vous y retrouvez tous vos achats, vos liens de téléchargement et vos demandes de remboursement.',
+        ],
+        button: { label: 'Ouvrir mon espace', url: link },
+        note: `Ce lien est valable ${minutes} minutes et ne sert qu'une fois. Vous n'avez rien demandé ? Ignorez cet e-mail : personne ne peut ouvrir votre espace sans ce lien.`,
       }),
     );
   }
