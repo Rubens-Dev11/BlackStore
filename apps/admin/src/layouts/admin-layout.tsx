@@ -10,6 +10,7 @@ const navItems = [
   { to: '/produits', label: 'Produits' },
   { to: '/categories', label: 'Catégories' },
   { to: '/commandes', label: 'Commandes' },
+  { to: '/codes-promo', label: 'Codes promo' },
   { to: '/avis', label: 'Avis' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/vendeurs', label: 'Vendeurs' },

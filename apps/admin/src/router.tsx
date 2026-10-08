@@ -33,6 +33,8 @@ import { MessagesPage } from '@/pages/messages-page';
 import { BackupsPage } from '@/pages/backups-page';
 import { DisputesPage } from '@/pages/disputes-page';
 import { SellerDisputesPage } from '@/pages/seller/seller-disputes-page';
+import { PromoCodesPage } from '@/pages/promo-codes-page';
+import { SellerPromoCodesPage } from '@/pages/seller/seller-promo-codes-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -56,6 +58,7 @@ export function AppRouter() {
         <Route path="/vendeur/gains/recus/:id" element={<SellerReceiptPage />} />
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
         <Route path="/vendeur/litiges" element={<SellerDisputesPage />} />
+        <Route path="/vendeur/codes-promo" element={<SellerPromoCodesPage />} />
         <Route path="/vendeur/*" element={<NotFoundPage space="vendeur" />} />
       </Route>
       <Route element={<AdminLayout />}>
@@ -74,6 +77,7 @@ export function AppRouter() {
         <Route path="/identites" element={<IdentityChecksPage />} />
         <Route path="/retraits" element={<WithdrawalsPage />} />
         <Route path="/litiges" element={<DisputesPage />} />
+        <Route path="/codes-promo" element={<PromoCodesPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/sauvegardes" element={<BackupsPage />} />
         <Route path="/reglages" element={<MarketplaceSettingsPage />} />

@@ -13,6 +13,7 @@ const navItems = [
   { to: '/vendeur/boutique', label: 'Ma boutique', end: false },
   { to: '/vendeur/produits', label: 'Mes produits', end: false },
   { to: '/vendeur/gains', label: 'Mes gains', end: false },
+  { to: '/vendeur/codes-promo', label: 'Codes promo', end: false },
   { to: '/vendeur/litiges', label: 'Litiges', end: false },
   { to: '/vendeur/identite', label: "Vérification d'identité", end: false },
   { to: '/vendeur/compte', label: 'Mon compte', end: false },

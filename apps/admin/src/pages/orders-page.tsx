@@ -23,6 +23,8 @@ interface Order {
   buyerEmail: string;
   buyerPhone: string | null;
   totalAmount: number;
+  promoCodeText: string | null;
+  discountAmount: number;
   currency: string;
   status: 'pending' | 'paid' | 'failed' | 'refunded';
   paymentMethod: string | null;
@@ -144,6 +146,9 @@ export function OrdersPage() {
                     </td>
                     <td className="py-3 px-4 font-semibold text-orange-600">
                       {formatFcfa(order.totalAmount)}
+                      {order.promoCodeText && (
+                        <div className="text-xs font-normal text-muted-foreground">code {order.promoCodeText}</div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>
@@ -205,6 +210,11 @@ export function OrdersPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Paiement</p>
                   <p className="font-medium">{formatFcfa(selectedOrder.totalAmount)}</p>
+                  {selectedOrder.promoCodeText && (
+                    <p className="text-muted-foreground">
+                      Code promo {selectedOrder.promoCodeText} : −{formatFcfa(selectedOrder.discountAmount)}
+                    </p>
+                  )}
                   <p className="text-muted-foreground">{selectedOrder.paymentMethod ?? '—'}</p>
                   {selectedOrder.paymentReference && (
                     <p className="font-mono text-xs text-muted-foreground">
