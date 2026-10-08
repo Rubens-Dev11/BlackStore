@@ -38,6 +38,19 @@ export const loginSchema = z.object({
 
 export type LoginFormSchema = z.infer<typeof loginSchema>;
 
+/** Mot de passe à remplacer : code reçu par e-mail + nouveau mot de passe. */
+export const passwordChangeCodeSchema = z.object({
+  code: z.string().regex(/^\d{6}$/, 'Le code reçu par e-mail compte 6 chiffres'),
+  newPassword: z.string()
+    .min(12, 'Le nouveau mot de passe doit faire au moins 12 caractères')
+    .max(72, 'Le nouveau mot de passe doit faire au plus 72 caractères'),
+  confirmPassword: z.string(),
+})
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'La confirmation ne correspond pas au nouveau mot de passe',
+    path: ['confirmPassword'],
+  });
+
 // ── Vendeurs (mêmes règles que l'API) ──────────────────────────────
 
 const sellerPassword = z.string().regex(
