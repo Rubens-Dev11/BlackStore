@@ -657,7 +657,12 @@ model PageView {
   utmMedium String?  @db.VarChar(100)     @map("utm_medium")
   ipHash    String?  @db.VarChar(64)      @map("ip_hash")
   userAgent String?  @db.Text             @map("user_agent")
+  // Page d'une boutique (sans produit) et site d'où vient le visiteur (lien sans paramètres utm).
+  storeId      String?  @map("store_id")
+  referrerHost String?  @db.VarChar(100) @map("referrer_host")
   createdAt DateTime @default(now())      @map("created_at")
 
+  @@index([productId, createdAt])
+  @@index([storeId, createdAt])
   @@map("page_views")
 }
