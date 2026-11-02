@@ -59,7 +59,7 @@ export function ProductPageClient({ product }: Props) {
 
   // Tracking pageview (silencieux)
   useEffect(() => {
-    trackPageView(product.id);
+    trackPageView({ productId: product.id });
     loadReviews();
   }, [product.id]);
 

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Facebook, Instagram, MessageCircle, Store } from 'lucide-react';
 import { ProductCard } from '@/components/products/product-card';
 import { fetchStoreBySlug } from '@/lib/api/stores';
+import { StoreViewTracker } from './store-view-tracker';
 
 interface Props {
   params: { slug: string };
@@ -45,6 +46,7 @@ export default async function StorePage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+      <StoreViewTracker slug={store.slug} />
       <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-white">
         <ArrowLeft className="h-4 w-4" />
         Tout le catalogue

@@ -40,7 +40,11 @@ export default async function PrivacyPage() {
 
       <LegalSection title="2. Données collectées">
         <ul className={LIST}>
-          <li><strong className="text-zinc-200">Visiteurs</strong> : adresse IP, type de navigateur, produits consultés, origine de la visite (lien de campagne). Pour les statistiques, l'adresse IP est transformée de façon irréversible.</li>
+          <li>
+            <strong className="text-zinc-200">Visiteurs</strong> : adresse IP, type de navigateur, produits et boutiques consultés, origine de
+            la visite (lien de campagne, ou site d'où vous venez, comme Facebook). Pour les statistiques, l'adresse IP est transformée de façon
+            irréversible avec une clé secrète. Les vendeurs ne voient que des totaux (nombre de visites, provenance), jamais vos données.
+          </li>
           <li><strong className="text-zinc-200">Acheteurs</strong> : nom, adresse e-mail, téléphone (facultatif), produits achetés, montant, référence et date du paiement ; pour un avis, l'e-mail, la note et le commentaire ; pour l'espace client, la date des liens de connexion et des sessions (le lien lui-même n'est pas conservé en clair).</li>
           <li><strong className="text-zinc-200">Signalements et messages</strong> : contenu du message, adresse e-mail (facultative pour un signalement), numéro de commande cité.</li>
           <li><strong className="text-zinc-200">Demandes de remboursement</strong> : produit concerné, motif et description du problème, numéro Mobile Money et nom du titulaire du compte qui recevra l'argent, réponse du vendeur et décision.</li>
