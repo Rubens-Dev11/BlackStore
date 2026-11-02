@@ -77,6 +77,11 @@ export function SellerDashboardPage() {
               Suivre vos ventes et retirer vos gains par Mobile Money
             </Link>
           </li>
+          <li>
+            <Link to="/vendeur/statistiques" className="font-medium text-primary hover:underline">
+              Voir vos statistiques : visites, ventes, provenance des visiteurs, relevés mensuels
+            </Link>
+          </li>
         </ol>
       </section>
     </div>

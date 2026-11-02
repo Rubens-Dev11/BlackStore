@@ -35,6 +35,9 @@ import { DisputesPage } from '@/pages/disputes-page';
 import { SellerDisputesPage } from '@/pages/seller/seller-disputes-page';
 import { PromoCodesPage } from '@/pages/promo-codes-page';
 import { SellerPromoCodesPage } from '@/pages/seller/seller-promo-codes-page';
+import { SellerStatsPage } from '@/pages/seller/seller-stats-page';
+import { SellerReportPage } from '@/pages/seller/seller-report-page';
+import { SellerReportAdminPage, SellerStatsAdminPage } from '@/pages/seller-stats-admin-page';
 
 import { NotFoundPage } from '@/pages/not-found-page';
 
@@ -59,6 +62,8 @@ export function AppRouter() {
         <Route path="/vendeur/compte" element={<SellerAccountPage />} />
         <Route path="/vendeur/litiges" element={<SellerDisputesPage />} />
         <Route path="/vendeur/codes-promo" element={<SellerPromoCodesPage />} />
+        <Route path="/vendeur/statistiques" element={<SellerStatsPage />} />
+        <Route path="/vendeur/statistiques/releve/:month" element={<SellerReportPage />} />
         <Route path="/vendeur/*" element={<NotFoundPage space="vendeur" />} />
       </Route>
       <Route element={<AdminLayout />}>
@@ -72,6 +77,8 @@ export function AppRouter() {
         <Route path="/avis" element={<ReviewsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/vendeurs" element={<SellersPage />} />
+        <Route path="/vendeurs/:id/statistiques" element={<SellerStatsAdminPage />} />
+        <Route path="/vendeurs/:id/releve/:month" element={<SellerReportAdminPage />} />
         <Route path="/produits-a-valider" element={<ProductReviewPage />} />
         <Route path="/signalements" element={<ReportsPage />} />
         <Route path="/identites" element={<IdentityChecksPage />} />

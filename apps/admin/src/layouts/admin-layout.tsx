@@ -95,7 +95,7 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen bg-muted/30">
-      <aside className="flex w-56 shrink-0 flex-col border-r bg-background p-4">
+      <aside className="flex w-56 shrink-0 flex-col border-r bg-background p-4 print:hidden">
         <p className="mb-6 text-lg font-bold">BlackStore Admin</p>
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => (
@@ -121,7 +121,7 @@ export function AdminLayout() {
         <p className="mt-auto pt-6 text-xs text-muted-foreground">API: {getApiUrl()}</p>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b bg-background px-6">
+        <header className="flex h-14 items-center justify-between border-b bg-background px-6 print:hidden">
           <p className="text-sm text-muted-foreground">BlackStore Admin Dashboard</p>
           <button
             onClick={() => {

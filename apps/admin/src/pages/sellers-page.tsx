@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { notify } from '@/lib/toast';
@@ -136,6 +137,9 @@ export function SellersPage() {
                     <td className="whitespace-nowrap py-3 px-4 text-xs text-muted-foreground">{formatDate(seller.createdAt)}</td>
                     <td className="py-3 px-4">
                       <div className="flex gap-1">
+                        <Link to={`/vendeurs/${seller.id}/statistiques`} className="whitespace-nowrap rounded border px-3 py-1 text-xs font-medium hover:bg-muted">
+                          Statistiques
+                        </Link>
                         {seller.status !== 'approved' && (
                           <button
                             disabled={busy}

@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { api } from '@/lib/api';
+import { SellersRankingSection } from '@/components/sellers-ranking';
 
 interface AnalyticsData {
   trafficSources: { utmSource: string | null; count: number }[];
@@ -114,6 +115,8 @@ export function AnalyticsPage() {
           )}
         </section>
       </div>
+
+      <SellersRankingSection />
     </div>
   );
 }
