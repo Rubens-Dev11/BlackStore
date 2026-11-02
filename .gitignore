@@ -37,6 +37,12 @@ npm-debug.log*
 
 # Testing
 coverage/
+# Essais de bout en bout : secrets de test aléatoires et fichiers produits à chaque lancement
+tests/e2e/test.env
+tests/e2e/api.env
+tests/e2e/backups-test/
+tests/e2e/resume.txt
+tests/e2e/clamd-down.flag
 
 # Docker
 docker-compose.override.yml
